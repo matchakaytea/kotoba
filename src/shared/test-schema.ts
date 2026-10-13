@@ -10,13 +10,22 @@ export const Target = z.strictObject({
 });
 
 // Template: multiple_choice
-export const MultipleChoiceQuestion = z.strictObject({
-  template: z.literal('multiple_choice'),
-  prompt: z.string().min(1),
-  options: z.array(z.string().min(1)).min(2).max(6),
-  answer_index: z.number().int().min(0),
-  targets: z.array(Target).min(1),
-});
+export const MultipleChoiceQuestion = z
+  .strictObject({
+    template: z.literal('multiple_choice'),
+    prompt: z.string().min(1),
+    options: z.array(z.string().min(1)).min(2).max(6),
+    answer_index: z.number().int().min(0),
+    targets: z.array(Target).min(1),
+  })
+  .refine((q) => q.answer_index < q.options.length, {
+    error: 'answer_index must point to one of the options',
+    path: ['answer_index'],
+  })
+  .refine((q) => new Set(q.options).size === q.options.length, {
+    error: 'options must not contain duplicates',
+    path: ['options'],
+  });
 
 // The whole test file
 export const LangTest = z.strictObject({
