@@ -1,0 +1,52 @@
+{
+  "format": "langtest",
+  "format_version": 1,
+  "test_id": "sample-it-n2",
+  "language": "ja",
+  "title": "IT vocabulary – sample",
+  "questions": [
+    {
+      "template": "reading",
+      "prompt": "障害",
+      "answers": ["しょうがい"],
+      "targets": [
+        { "expression": "障害", "reading": "しょうがい", "skill": "reading" }
+      ]
+    },
+    {
+      "template": "reading",
+      "prompt": "復旧",
+      "context": "システムが復旧した。",
+      "answers": ["ふっきゅう"],
+      "targets": [
+        { "expression": "復旧", "reading": "ふっきゅう", "skill": "reading" }
+      ]
+    },
+    {
+      "template": "multiple_choice",
+      "prompt": "Which word means 'bug / defect'?",
+      "options": ["設定", "不具合", "運用", "環境"],
+      "answer_index": 1,
+      "targets": [
+        { "expression": "不具合", "reading": "ふぐあい", "skill": "meaning" }
+      ]
+    },
+    {
+      "template": "reading",
+      "prompt": "導入",
+      "answers": ["どうにゅう"],
+      "targets": [
+        { "expression": "導入", "reading": "どうにゅう", "skill": "reading" }
+      ]
+    },
+    {
+      "template": "multiple_choice",
+      "prompt": "Which word means 'environment' (as in test environment)?",
+      "options": ["環境", "障害", "導入", "設定"],
+      "answer_index": 0,
+      "targets": [
+        { "expression": "環境", "reading": "かんきょう", "skill": "meaning" }
+      ]
+    }
+  ]
+}

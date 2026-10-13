@@ -1,6 +1,7 @@
 # Kotoba – Plan
 
 ## Goal
+
 A personal, local-first desktop app for daily Japanese practice. It takes tests,
 grades them, and uses spaced repetition to bring weak words and skills back at
 the right time.
@@ -9,6 +10,7 @@ Built partly as a learning project: understanding how the app works matters as
 much as finishing it.
 
 ## Key decisions
+
 - **Stack:** Electron + TypeScript + React + Vite, SQLite (better-sqlite3), Zod, Vitest.
 - **Local-first:** everything runs and is stored on this machine. No backend, no accounts.
 - **Tests are JSON files.** Each question uses one of a fixed set of question
@@ -33,6 +35,7 @@ much as finishing it.
   Secrets never committed.
 
 ## Not now
+
 - Languages other than Japanese
 - Speaking, listening, handwriting
 - Sync, accounts, multiple users
@@ -40,6 +43,7 @@ much as finishing it.
 - Calling the Claude API from inside the app (until milestone 7)
 
 ## Milestones
+
 - [x] 0 Scaffold – Electron Forge app runs, repo on GitHub
 - [ ] 1 Test schema + validator – Zod schema, sample test, unit tests
 - [ ] 2 Take a test – React UI, local grading, wanakana input
