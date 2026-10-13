@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-// What a question practices: a word (or grammar point) + which skill.
 export const Skill = z.enum(['reading', 'meaning', 'usage', 'grammar', 'production']);
 
 export const Target = z.strictObject({
@@ -9,7 +8,6 @@ export const Target = z.strictObject({
   skill: Skill,
 });
 
-// Template: multiple_choice
 export const MultipleChoiceQuestion = z
   .strictObject({
     template: z.literal('multiple_choice'),
@@ -27,17 +25,32 @@ export const MultipleChoiceQuestion = z
     path: ['options'],
   });
 
-// The whole test file
+const KANA = /^[ぁ-ゖァ-ヺー]+$/;
+
+export const ReadingQuestion = z.strictObject({
+  template: z.literal('reading'),
+  prompt: z.string().min(1),
+  context: z.string().min(1).optional(),
+  answers: z.array(z.string().regex(KANA, { error: 'answers must be kana only' })).min(1),
+  targets: z.array(Target).min(1),
+});
+
+export const Question = z.discriminatedUnion('template', [
+  MultipleChoiceQuestion,
+  ReadingQuestion,
+]);
+
 export const LangTest = z.strictObject({
   format: z.literal('langtest'),
   format_version: z.literal(1),
   test_id: z.string().min(1),
   language: z.literal('ja'),
   title: z.string().min(1),
-  questions: z.array(MultipleChoiceQuestion).min(1),
+  questions: z.array(Question).min(1),
 });
 
-// TypeScript types, generated from the schemas above
 export type Target = z.infer<typeof Target>;
 export type MultipleChoiceQuestion = z.infer<typeof MultipleChoiceQuestion>;
 export type LangTest = z.infer<typeof LangTest>;
+export type ReadingQuestion = z.infer<typeof ReadingQuestion>;
+export type Question = z.infer<typeof Question>;

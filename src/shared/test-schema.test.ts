@@ -15,6 +15,12 @@ const validTest = {
       answer_index: 1,
       targets: [{ expression: 'デプロイ', skill: 'meaning' }],
     },
+    {
+      template: 'reading',
+      prompt: '復旧',
+      answers: ['ふっきゅう'],
+      targets: [{ expression: '復旧', reading: 'ふっきゅう', skill: 'reading' }],
+    },
   ],
 };
 
@@ -35,6 +41,9 @@ describe('LangTest schema', () => {
     ['answer_index 0', (t: any) => (t.questions[0].answer_index = 0)],
     ['answer_index on the last option', (t: any) => (t.questions[0].answer_index = 2)],
     ['a target with a reading', (t: any) => (t.questions[0].targets[0].reading = 'でぷろい')],
+    ['a katakana answer', (t: any) => (t.questions[1].answers = ['フッキュウ'])],
+    ['a context sentence', (t: any) => (t.questions[1].context = 'システムが復旧した。')],
+    ['two answers', (t: any) => (t.questions[1].answers = ['ふっきゅう', 'フッキュウ'])],
   ])('accepts %s', (_name, change) => {
     expect(parseWith(change).success).toBe(true);
   });
@@ -54,6 +63,12 @@ describe('LangTest schema', () => {
     ['no targets', (t: any) => (t.questions[0].targets = []), ['questions', 0, 'targets']],
     ['an unknown skill', (t: any) => (t.questions[0].targets[0].skill = 'listening'), ['questions', 0, 'targets', 0, 'skill']],
     ['an empty reading', (t: any) => (t.questions[0].targets[0].reading = ''), ['questions', 0, 'targets', 0, 'reading']],
+    ['a romaji answer', (t: any) => (t.questions[1].answers = ['fukkyuu']), ['questions', 1, 'answers', 0]],
+    ['a kanji answer', (t: any) => (t.questions[1].answers = ['復旧']), ['questions', 1, 'answers', 0]],
+    ['an answer with a space', (t: any) => (t.questions[1].answers = ['ふっ きゅう']), ['questions', 1, 'answers', 0]],
+    ['no answers', (t: any) => (t.questions[1].answers = []), ['questions', 1, 'answers']],
+    ['options on a reading question', (t: any) => (t.questions[1].options = ['a', 'b']), ['questions', 1]],
+    ['an unknown template', (t: any) => (t.questions[0].template = 'listening'), ['questions', 0, 'template']],
     // the test file itself
     ['a wrong format', (t: any) => (t.format = 'something-else'), ['format']],
     ['an unsupported format_version', (t: any) => (t.format_version = 2), ['format_version']],
