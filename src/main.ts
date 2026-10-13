@@ -26,7 +26,6 @@ const createWindow = () => {
       path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
     );
   }
-
 };
 
 // This method will be called when Electron has finished

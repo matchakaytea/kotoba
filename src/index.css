@@ -1,8 +1,135 @@
+:root {
+  --bg: #fafaf7;
+  --text: #1f2328;
+  --muted: #6b7280;
+  --border: #d4d4d8;
+  --accent: #2563eb;
+  --correct: #15803d;
+  --correct-bg: #dcfce7;
+  --wrong: #b91c1c;
+  --wrong-bg: #fee2e2;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #18181b;
+    --text: #e4e4e7;
+    --muted: #a1a1aa;
+    --border: #3f3f46;
+    --accent: #60a5fa;
+    --correct: #4ade80;
+    --correct-bg: #14532d;
+    --wrong: #f87171;
+    --wrong-bg: #7f1d1d;
+  }
+}
+
 body {
   font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
-    sans-serif;
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Yu Gothic UI', 'Meiryo',
+    Roboto, Helvetica, Arial, sans-serif;
   margin: auto;
   max-width: 38rem;
   padding: 2rem;
+  background: var(--bg);
+  color: var(--text);
+}
+
+button {
+  font: inherit;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+}
+
+.test-header {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  margin-bottom: 2rem;
+}
+
+.prompt-text {
+  font-size: 1.25rem;
+}
+
+.prompt-kanji {
+  font-size: 4rem;
+  text-align: center;
+  margin: 1rem 0;
+}
+
+.context {
+  text-align: center;
+  color: var(--muted);
+}
+
+.answer-input {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 1.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: transparent;
+  color: inherit;
+  text-align: center;
+}
+
+.options {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.option {
+  text-align: left;
+  font-size: 1.25rem;
+}
+
+.option-number {
+  color: var(--muted);
+  margin-right: 0.5rem;
+}
+
+.option.correct {
+  border-color: var(--correct);
+  background: var(--correct-bg);
+}
+
+.option.wrong {
+  border-color: var(--wrong);
+  background: var(--wrong-bg);
+}
+
+.feedback {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.feedback.correct {
+  background: var(--correct-bg);
+}
+
+.feedback.wrong {
+  background: var(--wrong-bg);
+}
+
+.feedback p {
+  margin: 0 0 0.75rem;
+}
+
+.hint {
+  color: var(--muted);
+}
+
+.score {
+  font-size: 2rem;
 }
