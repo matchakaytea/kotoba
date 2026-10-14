@@ -1,3 +1,9 @@
-// oxlint-disable eslint-plugin-unicorn/no-empty-file
-// See the Electron documentation for details on how to use preload scripts:
-// https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
+import { contextBridge, ipcRenderer } from 'electron';
+import type { KotobaApi } from './shared/api';
+
+const api: KotobaApi = {
+  saveAttempt: (input) => ipcRenderer.invoke('attempt:save', input),
+  getSummary: () => ipcRenderer.invoke('summary:get'),
+};
+
+contextBridge.exposeInMainWorld('kotoba', api);

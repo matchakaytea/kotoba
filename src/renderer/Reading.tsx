@@ -6,7 +6,7 @@ import type { ReadingQuestion } from '../shared/test-schema';
 type Props = {
   question: ReadingQuestion;
   answered: boolean;
-  onAnswer: (result: GradeResult) => void;
+  onAnswer: (result: GradeResult, answer: string) => void;
 };
 
 export function Reading({ question, answered, onAnswer }: Props) {
@@ -25,7 +25,7 @@ export function Reading({ question, answered, onAnswer }: Props) {
     const raw = inputRef.current?.value ?? '';
     const answer = toHiragana(raw, { convertLongVowelMark: false });
     if (answer.trim() === '') return;
-    onAnswer(gradeReading(question, answer));
+    onAnswer(gradeReading(question, answer), answer);
   }
 
   return (

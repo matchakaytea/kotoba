@@ -11,7 +11,7 @@ much as finishing it.
 
 ## Key decisions
 
-- **Stack:** Electron + TypeScript + React + Vite, SQLite (better-sqlite3), Zod, Vitest.
+- **Stack:** Electron + TypeScript + React + Vite, SQLite (built-in `node:sqlite`, no native build), Zod, Vitest.
 - **Local-first:** everything runs and is stored on this machine. No backend, no accounts.
 - **Tests are JSON files.** Each question uses one of a fixed set of question
   templates the app knows (multiple_choice, reading, meaning, cloze, conjugation,
@@ -45,9 +45,9 @@ much as finishing it.
 ## Milestones
 
 - [x] 0 Scaffold – Electron Forge app runs, repo on GitHub
-- [ ] 1 Test schema + validator – Zod schema, sample test, unit tests
-- [ ] 2 Take a test – React UI, local grading, wanakana input
-- [ ] 3 Save attempts – SQLite, migrations, preload API
+- [x] 1 Test schema + validator – Zod schema, sample test, unit tests
+- [x] 2 Take a test – React UI, local grading, wanakana input
+- [x] 3 Save attempts – SQLite, migrations, preload API
 - [ ] 4 Scheduling – FSRS, Today screen
 - [ ] 5 Inbox import + brief export
 - [ ] 6 Daily generation with `claude -p`

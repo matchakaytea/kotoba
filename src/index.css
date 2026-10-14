@@ -133,3 +133,11 @@ button:disabled {
 .score {
   font-size: 2rem;
 }
+
+.all-time {
+  color: var(--muted);
+}
+
+.save-error {
+  color: var(--wrong);
+}

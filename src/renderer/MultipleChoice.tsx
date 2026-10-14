@@ -5,7 +5,7 @@ import type { MultipleChoiceQuestion } from '../shared/test-schema';
 type Props = {
   question: MultipleChoiceQuestion;
   answered: boolean;
-  onAnswer: (result: GradeResult) => void;
+  onAnswer: (result: GradeResult, answer: string) => void;
 };
 
 export function MultipleChoice({ question, answered, onAnswer }: Props) {
@@ -13,7 +13,7 @@ export function MultipleChoice({ question, answered, onAnswer }: Props) {
 
   function choose(index: number) {
     setChosen(index);
-    onAnswer(gradeMultipleChoice(question, index));
+    onAnswer(gradeMultipleChoice(question, index), question.options[index]);
   }
 
   useEffect(() => {

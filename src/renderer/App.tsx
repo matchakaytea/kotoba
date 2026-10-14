@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { Summary } from '../shared/api';
 import type { GradeResult } from '../shared/grading';
 import type { Question } from '../shared/test-schema';
 import { Feedback } from './Feedback';
@@ -11,10 +12,24 @@ export function App() {
   const [index, setIndex] = useState(0);
   const [result, setResult] = useState<GradeResult | null>(null);
   const [correctCount, setCorrectCount] = useState(0);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  function handleAnswer(answer: GradeResult) {
-    setResult(answer);
-    if (answer.correct) setCorrectCount((count) => count + 1);
+  function handleAnswer(graded: GradeResult, answer: string) {
+    setResult(graded);
+    if (graded.correct) setCorrectCount((count) => count + 1);
+
+    const question = questions[index];
+    window.kotoba
+      .saveAttempt({
+        testId: sampleTest.test_id,
+        questionIndex: index,
+        template: question.template,
+        answer,
+        correct: graded.correct,
+        targets: question.targets,
+      })
+      .then(() => setSaveError(null))
+      .catch((error: unknown) => setSaveError(String(error)));
   }
 
   function next() {
@@ -35,6 +50,7 @@ export function App() {
         <p className="score">
           {correctCount} / {questions.length} correct
         </p>
+        <AllTimeSummary />
         <button autoFocus onClick={restart}>
           Start again
         </button>
@@ -57,14 +73,33 @@ export function App() {
         onAnswer={handleAnswer}
       />
       {result && <Feedback result={result} onNext={next} />}
+      {saveError && (
+        <p className="save-error">Could not save this answer: {saveError}</p>
+      )}
     </main>
+  );
+}
+
+function AllTimeSummary() {
+  const [summary, setSummary] = useState<Summary | null>(null);
+
+  useEffect(() => {
+    window.kotoba.getSummary().then(setSummary);
+  }, []);
+
+  if (!summary) return null;
+  return (
+    <p className="all-time">
+      All time: {summary.correct} / {summary.attempts} answers correct,{' '}
+      {summary.targets} words practised
+    </p>
   );
 }
 
 type QuestionViewProps = {
   question: Question;
   answered: boolean;
-  onAnswer: (result: GradeResult) => void;
+  onAnswer: (result: GradeResult, answer: string) => void;
 };
 
 function QuestionView({ question, ...rest }: QuestionViewProps) {

@@ -1,21 +1,32 @@
 import { app, BrowserWindow } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
+import { openDatabase } from './main/database';
+import { registerIpcHandlers } from './main/ipc';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
   app.quit();
 }
 
+let mainWindow: BrowserWindow | null = null;
+
 const createWindow = () => {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
     title: 'kotoba',
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
+      contextIsolation: true,
+      sandbox: true,
+      nodeIntegration: false,
     },
+  });
+
+  mainWindow.on('closed', () => {
+    mainWindow = null;
   });
 
   // and load the index.html of the app.
@@ -32,6 +43,17 @@ const createWindow = () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
+  const db = openDatabase(path.join(app.getPath('userData'), 'kotoba.db'));
+  app.on('will-quit', () => db.close());
+
+  registerIpcHandlers(
+    db,
+    (event) =>
+      mainWindow !== null &&
+      event.sender === mainWindow.webContents &&
+      event.senderFrame === mainWindow.webContents.mainFrame,
+  );
+
   createWindow();
 
   // On OS X it's common to re-create a window in the app when the
@@ -51,6 +73,3 @@ app.on('window-all-closed', () => {
     app.quit();
   }
 });
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and import them here.
