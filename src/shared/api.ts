@@ -92,6 +92,7 @@ export interface KotobaApi {
   generateTest(): Promise<ImportReport>;
   getMistakes(): Promise<Mistake[]>;
   getLibrary(): Promise<LibraryTest[]>;
+  deleteTest(testId: string): Promise<LibraryTest[]>;
   getSettings(): Promise<Settings>;
   saveSettings(settings: Settings): Promise<Settings>;
 }

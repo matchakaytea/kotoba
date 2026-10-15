@@ -4,6 +4,7 @@ import { DEFAULT_SETTINGS, type AttemptInput } from '../shared/api';
 import type { LangTest, Question } from '../shared/test-schema';
 import {
   buildSession,
+  deleteTest,
   getLibrary,
   getMistakes,
   getSettings,
@@ -494,5 +495,100 @@ describe('settings', () => {
       saveSettings(db, { level: '', topics: [], questionCount: 2 }),
     ).toThrow();
     expect(getSettings(db)).toEqual(DEFAULT_SETTINGS);
+  });
+});
+
+describe('deleteTest', () => {
+  const base = {
+    format: 'langtest',
+    format_version: 1,
+    language: 'ja',
+  } as const;
+
+  function reading(expression: string, answer: string): Question {
+    return {
+      template: 'reading',
+      prompt: expression,
+      answers: [answer],
+      targets: [{ expression, reading: answer, skill: 'reading' }],
+    };
+  }
+
+  function targetNames(): string[] {
+    return (
+      db
+        .prepare('SELECT expression FROM targets ORDER BY expression')
+        .all() as {
+        expression: string;
+      }[]
+    ).map((row) => row.expression);
+  }
+
+  it('removes the test and its questions', () => {
+    saveTest(db, {
+      ...base,
+      test_id: 'a',
+      title: 'A',
+      questions: [reading('復旧', 'ふっきゅう')],
+    });
+    deleteTest(db, 'a');
+    expect(count('tests')).toBe(0);
+    expect(count('questions')).toBe(0);
+    expect(count('question_targets')).toBe(0);
+    expect(buildSession(db).items).toHaveLength(0);
+  });
+
+  it('removes words that were never practised and appear nowhere else', () => {
+    saveTest(db, {
+      ...base,
+      test_id: 'a',
+      title: 'A',
+      questions: [reading('復旧', 'ふっきゅう')],
+    });
+    deleteTest(db, 'a');
+    expect(targetNames()).toEqual([]);
+  });
+
+  it('keeps words that were practised, with their history', () => {
+    saveTest(db, {
+      ...base,
+      test_id: 'a',
+      title: 'A',
+      questions: [reading('復旧', 'ふっきゅう')],
+    });
+    recordAttempt(db, attempt);
+    deleteTest(db, 'a');
+    expect(targetNames()).toEqual(['復旧']);
+    expect(count('attempts')).toBe(1);
+    expect(count('review_states')).toBe(1);
+  });
+
+  it('keeps words that another test still uses', () => {
+    saveTest(db, {
+      ...base,
+      test_id: 'a',
+      title: 'A',
+      questions: [reading('復旧', 'ふっきゅう'), reading('障害', 'しょうがい')],
+    });
+    saveTest(db, {
+      ...base,
+      test_id: 'b',
+      title: 'B',
+      questions: [reading('障害', 'しょうがい')],
+    });
+    deleteTest(db, 'a');
+    expect(targetNames()).toEqual(['障害']);
+    expect(getLibrary(db).map((t) => t.id)).toEqual(['b']);
+  });
+
+  it('does nothing for an unknown test', () => {
+    saveTest(db, {
+      ...base,
+      test_id: 'a',
+      title: 'A',
+      questions: [reading('復旧', 'ふっきゅう')],
+    });
+    deleteTest(db, 'missing');
+    expect(count('questions')).toBe(1);
   });
 });

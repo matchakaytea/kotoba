@@ -2,10 +2,12 @@ import { clipboard, ipcMain, shell, type IpcMainInvokeEvent } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
+import { z } from 'zod';
 import { AttemptInput, Settings, type ImportReport } from '../shared/api';
 import { briefPrompt, buildBrief } from './brief';
 import {
   buildSession,
+  deleteTest,
   getLibrary,
   getMistakes,
   getSettings,
@@ -63,6 +65,10 @@ export function registerIpcHandlers({
   handle('session:get', () => buildSession(db));
   handle('mistakes:get', () => getMistakes(db));
   handle('library:get', () => getLibrary(db));
+  handle('library:delete', (_event, payload) => {
+    deleteTest(db, z.string().min(1).max(200).parse(payload));
+    return getLibrary(db);
+  });
   handle('settings:get', () => getSettings(db));
   handle('settings:save', (_event, payload) =>
     saveSettings(db, Settings.parse(payload)),

@@ -681,3 +681,53 @@ input {
   color: var(--muted);
   margin-top: 0.25rem;
 }
+
+button.subtle {
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+  padding: 0.3rem 0.75rem;
+}
+
+button.subtle:hover:not(:disabled) {
+  color: var(--wrong);
+  background: var(--wrong-soft);
+}
+
+button.danger {
+  background: var(--wrong);
+  border-color: var(--wrong);
+  color: #ffffff;
+}
+
+button.danger:hover:not(:disabled) {
+  background: var(--wrong);
+  filter: brightness(1.1);
+}
+
+.actions-cell {
+  text-align: right;
+  white-space: nowrap;
+  width: 1%;
+}
+
+.table td.actions-cell {
+  vertical-align: middle;
+  padding-top: 0.4rem;
+  padding-bottom: 0.4rem;
+}
+
+.confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.confirm-text {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.confirm button {
+  padding: 0.3rem 0.75rem;
+}

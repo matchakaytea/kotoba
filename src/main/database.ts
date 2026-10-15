@@ -376,6 +376,35 @@ export function getLibrary(db: DatabaseSync): LibraryTest[] {
     .all() as LibraryTest[];
 }
 
+export function deleteTest(db: DatabaseSync, testId: string): void {
+  transaction(db, () => {
+    const targetIds = (
+      db
+        .prepare(
+          `SELECT DISTINCT qt.target_id AS id
+           FROM question_targets qt
+           JOIN questions q ON q.id = qt.question_id
+           WHERE q.test_id = ?`,
+        )
+        .all(testId) as { id: number }[]
+    ).map((row) => row.id);
+
+    db.prepare('DELETE FROM questions WHERE test_id = ?').run(testId);
+    db.prepare('DELETE FROM tests WHERE id = ?').run(testId);
+
+    const removeUnused = db.prepare(
+      `DELETE FROM targets
+       WHERE id = ?
+         AND NOT EXISTS (SELECT 1 FROM question_targets WHERE target_id = targets.id)
+         AND NOT EXISTS (SELECT 1 FROM attempt_targets WHERE target_id = targets.id)
+         AND NOT EXISTS (SELECT 1 FROM review_states WHERE target_id = targets.id)`,
+    );
+    for (const id of targetIds) {
+      removeUnused.run(id);
+    }
+  });
+}
+
 export function getSettings(db: DatabaseSync): Settings {
   const row = db
     .prepare("SELECT value FROM settings WHERE key = 'learner'")
