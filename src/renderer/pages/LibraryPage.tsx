@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { LANGUAGES, type LibraryTest } from '../../shared/api';
+import { localizeTitle } from '../../shared/localize';
 import { cleanError, formatTimestamp } from '../format';
 import { useI18n } from '../i18n/i18n';
 
@@ -13,8 +14,12 @@ export function LibraryPage() {
     null,
   );
 
-  const languageName =
-    LANGUAGES.find((option) => option.code === language)?.name ?? language;
+  const titleOf = (test: LibraryTest) =>
+    localizeTitle(test.title, test.titleI18n, language);
+  const languageNames = (test: LibraryTest) =>
+    test.missingLanguages
+      .map((code) => LANGUAGES.find((option) => option.code === code)?.name)
+      .join(', ');
 
   useEffect(() => {
     window.kotoba.getLibrary().then(setTests);
@@ -40,7 +45,8 @@ export function LibraryPage() {
     try {
       const updated = await window.kotoba.translateTest(test.id);
       setTests(updated);
-      const title = updated.find((item) => item.id === test.id)?.title ?? '';
+      const item = updated.find((entry) => entry.id === test.id);
+      const title = item ? titleOf(item) : '';
       setNotice({ ok: true, text: t('library.translated', { title }) });
     } catch (e) {
       setNotice({ ok: false, text: cleanError(e) });
@@ -89,7 +95,7 @@ export function LibraryPage() {
             {tests.map((test) => (
               <tr key={test.id}>
                 <td>
-                  {test.title}
+                  {titleOf(test)}
                   <span className="cell-id">{test.id}</span>
                 </td>
                 <td className="num">{test.questions}</td>
@@ -115,11 +121,11 @@ export function LibraryPage() {
                     </span>
                   ) : (
                     <span className="row-actions">
-                      {claudeAvailable && (
+                      {claudeAvailable && test.missingLanguages.length > 0 && (
                         <button
                           className="subtle-neutral"
                           title={t('library.translateTitle', {
-                            language: languageName,
+                            languages: languageNames(test),
                           })}
                           disabled={translating !== null}
                           onClick={() => translate(test)}

@@ -1,10 +1,20 @@
 import { useEffect, useState } from 'react';
-import type { Mistake } from '../../shared/api';
+import type { Language, Mistake } from '../../shared/api';
+import { describeMistake } from '../../shared/localize';
+import type { Question } from '../../shared/test-schema';
 import { formatTimestamp } from '../format';
 import { useI18n } from '../i18n/i18n';
 
+function answersAreJapanese(question: Question | null, language: Language) {
+  if (!question || question.template === 'reading') return true;
+  return (
+    !question.i18n?.[language]?.options &&
+    /[぀-ヿ]|[一-鿿]/.test(question.options.join(''))
+  );
+}
+
 export function MistakesPage() {
-  const { t, locale } = useI18n();
+  const { t, locale, language } = useI18n();
   const [mistakes, setMistakes] = useState<Mistake[] | null>(null);
 
   useEffect(() => {
@@ -35,24 +45,34 @@ export function MistakesPage() {
             </tr>
           </thead>
           <tbody>
-            {mistakes.map((mistake, i) => (
-              <tr key={i}>
-                <td className="cell-prompt">
-                  {mistake.prompt ?? (
-                    <span lang="ja">{mistake.targets.join('、')}</span>
-                  )}
-                </td>
-                <td lang="ja" className="cell-wrong">
-                  {mistake.answer}
-                </td>
-                <td lang="ja" className="cell-right">
-                  {mistake.expected ?? '—'}
-                </td>
-                <td className="cell-muted">
-                  {formatTimestamp(mistake.answeredAt, locale)}
-                </td>
-              </tr>
-            ))}
+            {mistakes.map((mistake, i) => {
+              const shown = describeMistake(
+                mistake.question,
+                mistake.answer,
+                language,
+              );
+              const answersLang = answersAreJapanese(mistake.question, language)
+                ? 'ja'
+                : undefined;
+              return (
+                <tr key={i}>
+                  <td className="cell-prompt">
+                    {shown.prompt ?? (
+                      <span lang="ja">{mistake.targets.join('、')}</span>
+                    )}
+                  </td>
+                  <td lang={answersLang} className="cell-wrong">
+                    {shown.answer}
+                  </td>
+                  <td lang={answersLang} className="cell-right">
+                    {shown.expected ?? '—'}
+                  </td>
+                  <td className="cell-muted">
+                    {formatTimestamp(mistake.answeredAt, locale)}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       )}

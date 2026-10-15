@@ -1,69 +1,100 @@
-import type { LangTest } from './test-schema';
+import type { Language } from './languages';
+import type { LangTest, Question } from './test-schema';
 
 const JAPANESE = /[぀-ヿ㐀-鿿々〆ー]+/g;
 
-export function checkTranslation(
-  original: LangTest,
-  translated: LangTest,
-): string[] {
-  const problems: string[] = [];
+function hasJapanese(text: string): boolean {
+  JAPANESE.lastIndex = 0;
+  const found = JAPANESE.test(text);
+  JAPANESE.lastIndex = 0;
+  return found;
+}
 
-  if (translated.test_id !== original.test_id) {
-    problems.push('test_id changed');
-  }
-  if (translated.questions.length !== original.questions.length) {
-    problems.push(
-      `question count changed from ${original.questions.length} to ${translated.questions.length}`,
+function withoutNewTranslations(test: LangTest, languages: Language[]) {
+  const strip = <T extends Partial<Record<Language, unknown>> | undefined>(
+    map: T,
+  ) => {
+    if (!map) return undefined;
+    const kept = Object.fromEntries(
+      Object.entries(map).filter(
+        ([code]) => !languages.includes(code as Language),
+      ),
     );
-    return problems;
+    return Object.keys(kept).length > 0 ? kept : undefined;
+  };
+  return stableStringify({
+    ...test,
+    title_i18n: strip(test.title_i18n),
+    questions: test.questions.map((question: Question) =>
+      question.template === 'multiple_choice'
+        ? { ...question, i18n: strip(question.i18n) }
+        : question,
+    ),
+  });
+}
+
+function stableStringify(value: unknown): string {
+  return JSON.stringify(value, (_key, inner: unknown) =>
+    inner && typeof inner === 'object' && !Array.isArray(inner)
+      ? Object.fromEntries(
+          Object.entries(inner)
+            .filter(([, v]) => v !== undefined)
+            .sort(([a], [b]) => a.localeCompare(b)),
+        )
+      : inner,
+  );
+}
+
+export function checkAddedTranslations(
+  original: LangTest,
+  updated: LangTest,
+  languages: Language[],
+): string[] {
+  if (
+    withoutNewTranslations(updated, languages) !==
+    withoutNewTranslations(original, languages)
+  ) {
+    return ['the test itself changed, not just the translations'];
+  }
+
+  const problems: string[] = [];
+  for (const language of languages) {
+    if (!updated.title_i18n?.[language]) {
+      problems.push(`title: ${language} missing`);
+    }
   }
 
   original.questions.forEach((before, i) => {
-    const after = translated.questions[i];
-    const where = `Question ${i + 1}`;
-
-    if (after.template !== before.template) {
-      problems.push(`${where}: template changed`);
-      return;
-    }
-    if (JSON.stringify(after.targets) !== JSON.stringify(before.targets)) {
-      problems.push(`${where}: targets changed`);
-    }
-
-    if (before.template === 'reading' && after.template === 'reading') {
-      if (
-        after.prompt !== before.prompt ||
-        JSON.stringify(after.answers) !== JSON.stringify(before.answers) ||
-        after.context !== before.context
-      ) {
-        problems.push(`${where}: reading question changed`);
-      }
-      return;
-    }
-
+    const after = updated.questions[i];
     if (
-      before.template === 'multiple_choice' &&
-      after.template === 'multiple_choice'
+      before.template !== 'multiple_choice' ||
+      after.template !== 'multiple_choice'
     ) {
-      if (after.answer_index !== before.answer_index) {
-        problems.push(`${where}: answer_index changed`);
+      return;
+    }
+    const where = `Question ${i + 1}`;
+    const japaneseOptions = before.options.some(hasJapanese);
+    const japaneseInPrompt = new Set(before.prompt.match(JAPANESE) ?? []);
+
+    for (const language of languages) {
+      const text = after.i18n?.[language];
+      if (!text) {
+        problems.push(`${where}: ${language} missing`);
+        continue;
       }
-      if (after.options.length !== before.options.length) {
-        problems.push(`${where}: number of options changed`);
-        return;
+      for (const word of japaneseInPrompt) {
+        if (!text.prompt.includes(word)) {
+          problems.push(`${where}: ${language} prompt lost “${word}”`);
+        }
       }
-      before.options.forEach((option, j) => {
-        if (JAPANESE.test(option) && after.options[j] !== option) {
-          problems.push(`${where}: Japanese option ${j + 1} changed`);
-        }
-        JAPANESE.lastIndex = 0;
-      });
-      for (const word of new Set(before.prompt.match(JAPANESE) ?? [])) {
-        if (!after.prompt.includes(word)) {
-          problems.push(
-            `${where}: Japanese text “${word}” missing from the prompt`,
-          );
-        }
+      if (japaneseOptions && text.options) {
+        before.options.forEach((option, j) => {
+          if (hasJapanese(option) && text.options?.[j] !== option) {
+            problems.push(
+              `${where}: ${language} changed Japanese option ${j + 1}`,
+            );
+          }
+        });
       }
     }
   });

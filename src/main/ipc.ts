@@ -9,7 +9,8 @@ import {
   Settings,
   type ImportReport,
 } from '../shared/api';
-import { checkTranslation } from '../shared/translation-check';
+import { missingLanguages } from '../shared/localize';
+import { checkAddedTranslations } from '../shared/translation-check';
 import { validateTestFile } from '../shared/validate-test-file';
 import { briefPrompt, buildBrief, translatePrompt } from './brief';
 import {
@@ -130,10 +131,13 @@ export function registerIpcHandlers({
     const stored = getTest(db, TestId.parse(payload));
     if (!stored) throw new Error('That test no longer exists.');
 
-    const language =
-      LANGUAGES.find((option) => option.code === getSettings(db).language)
-        ?.english ?? 'English';
-    const reply = await askClaude(translatePrompt(stored.test, language));
+    const languages = missingLanguages(
+      stored.test,
+      LANGUAGES.map((option) => option.code),
+    );
+    if (languages.length === 0) return getLibrary(db);
+
+    const reply = await askClaude(translatePrompt(stored.test, languages));
 
     const result = validateTestFile(reply);
     if (!result.ok) {
@@ -141,10 +145,14 @@ export function registerIpcHandlers({
         `Claude returned a test that doesn't pass the checks, so nothing was changed. ${result.errors.slice(0, 3).join(' · ')}`,
       );
     }
-    const problems = checkTranslation(stored.test, result.test);
+    const problems = checkAddedTranslations(
+      stored.test,
+      result.test,
+      languages,
+    );
     if (problems.length > 0) {
       throw new Error(
-        `The translation changed more than the wording, so nothing was changed. ${problems.slice(0, 3).join(' · ')}`,
+        `The translation changed more than it should have, so nothing was changed. ${problems.slice(0, 3).join(' · ')}`,
       );
     }
     saveTest(db, result.test, stored.importedAt);

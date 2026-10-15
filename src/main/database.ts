@@ -12,6 +12,8 @@ import {
   type SettingsInput,
   type Today,
 } from '../shared/api';
+import { LANGUAGES } from '../shared/languages';
+import { missingLanguages } from '../shared/localize';
 import { Question, type LangTest, type Target } from '../shared/test-schema';
 import {
   localDay,
@@ -87,6 +89,9 @@ export const MIGRATIONS: string[] = [
     value TEXT NOT NULL
   );
   `,
+  `
+  ALTER TABLE tests ADD COLUMN title_i18n TEXT;
+  `,
 ];
 
 export const SESSION_LIMITS = { maxQuestions: 20, maxNewTargets: 10 };
@@ -159,11 +164,17 @@ export function saveTest(
 ): void {
   transaction(db, () => {
     db.prepare(
-      `INSERT INTO tests (id, title, imported_at) VALUES (?, ?, ?)
+      `INSERT INTO tests (id, title, title_i18n, imported_at) VALUES (?, ?, ?, ?)
        ON CONFLICT (id) DO UPDATE SET
          title = excluded.title,
+         title_i18n = excluded.title_i18n,
          imported_at = excluded.imported_at`,
-    ).run(test.test_id, test.title, now.toISOString());
+    ).run(
+      test.test_id,
+      test.title,
+      test.title_i18n ? JSON.stringify(test.title_i18n) : null,
+      now.toISOString(),
+    );
     db.prepare('DELETE FROM questions WHERE test_id = ?').run(test.test_id);
 
     const insertQuestion = db.prepare(
@@ -345,25 +356,14 @@ export function getMistakes(db: DatabaseSync, limit = 100): Mistake[] {
   }[];
 
   return rows.map((row) => {
-    const question = row.body ? Question.safeParse(JSON.parse(row.body)) : null;
-    const parsed = question?.success ? question.data : null;
+    const parsed = row.body ? Question.safeParse(JSON.parse(row.body)) : null;
     return {
       answeredAt: row.answeredAt,
-      prompt: parsed?.prompt ?? null,
       answer: row.answer,
-      expected: parsed ? expectedAnswer(parsed) : null,
+      question: parsed?.success ? parsed.data : null,
       targets: row.targets ? row.targets.split('、') : [],
     };
   });
-}
-
-function expectedAnswer(question: Question): string {
-  switch (question.template) {
-    case 'multiple_choice':
-      return question.options[question.answer_index];
-    case 'reading':
-      return question.answers.join(' / ');
-  }
 }
 
 export function getTest(
@@ -371,8 +371,12 @@ export function getTest(
   testId: string,
 ): { test: LangTest; importedAt: Date } | null {
   const row = db
-    .prepare('SELECT title, imported_at AS importedAt FROM tests WHERE id = ?')
-    .get(testId) as { title: string; importedAt: string } | undefined;
+    .prepare(
+      'SELECT title, title_i18n AS titleI18n, imported_at AS importedAt FROM tests WHERE id = ?',
+    )
+    .get(testId) as
+    | { title: string; titleI18n: string | null; importedAt: string }
+    | undefined;
   if (!row) return null;
   const questions = (
     db
@@ -388,6 +392,7 @@ export function getTest(
       test_id: testId,
       language: 'ja',
       title: row.title,
+      ...(row.titleI18n ? { title_i18n: JSON.parse(row.titleI18n) } : {}),
       questions,
     },
     importedAt: new Date(row.importedAt),
@@ -395,14 +400,26 @@ export function getTest(
 }
 
 export function getLibrary(db: DatabaseSync): LibraryTest[] {
-  return db
-    .prepare(
-      `SELECT t.id, t.title, t.imported_at AS importedAt,
-              (SELECT COUNT(*) FROM questions q WHERE q.test_id = t.id) AS questions
-       FROM tests t
-       ORDER BY t.imported_at DESC`,
-    )
-    .all() as LibraryTest[];
+  const ids = db
+    .prepare('SELECT id FROM tests ORDER BY imported_at DESC')
+    .all() as { id: string }[];
+  return ids.flatMap(({ id }) => {
+    const stored = getTest(db, id);
+    if (!stored) return [];
+    return [
+      {
+        id,
+        title: stored.test.title,
+        titleI18n: stored.test.title_i18n ?? {},
+        importedAt: stored.importedAt.toISOString(),
+        questions: stored.test.questions.length,
+        missingLanguages: missingLanguages(
+          stored.test,
+          LANGUAGES.map((language) => language.code),
+        ),
+      },
+    ];
+  });
 }
 
 export function deleteTest(db: DatabaseSync, testId: string): void {

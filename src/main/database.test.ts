@@ -420,16 +420,14 @@ describe('getMistakes', () => {
     expect(getMistakes(db)).toEqual([
       {
         answeredAt: new Date(2026, 9, 13, 9, 0).toISOString(),
-        prompt: "Which word means 'bug'?",
         answer: '設定',
-        expected: '不具合',
+        question: test.questions[1],
         targets: ['不具合'],
       },
       {
         answeredAt: new Date(2026, 9, 12, 9, 0).toISOString(),
-        prompt: '復旧',
         answer: 'ふきゅう',
-        expected: 'ふっきゅう',
+        question: test.questions[0],
         targets: ['復旧'],
       },
     ]);
@@ -438,8 +436,7 @@ describe('getMistakes', () => {
   it('still lists a mistake whose question is gone', () => {
     answer(0, 'ふきゅう', false, new Date(2026, 9, 12, 9, 0));
     expect(getMistakes(db)[0]).toMatchObject({
-      prompt: null,
-      expected: null,
+      question: null,
       answer: 'ふきゅう',
       targets: ['復旧'],
     });
@@ -654,5 +651,46 @@ describe('getTest', () => {
 
   it('returns null for an unknown test', () => {
     expect(getTest(db, 'missing')).toBeNull();
+  });
+});
+
+describe('translations in stored tests', () => {
+  const test: LangTest = {
+    format: 'langtest',
+    format_version: 1,
+    test_id: 'multi',
+    language: 'ja',
+    title: 'IT words',
+    title_i18n: { en: 'IT words', 'zh-Hans': 'IT 词汇' },
+    questions: [
+      {
+        template: 'multiple_choice',
+        prompt: 'What does 引き継ぎ mean?',
+        options: ['A handover', 'A resignation'],
+        answer_index: 0,
+        targets: [{ expression: '引き継ぎ', skill: 'meaning' }],
+        i18n: {
+          en: { prompt: 'What does 引き継ぎ mean?' },
+          'zh-Hans': {
+            prompt: '引き継ぎ是什么意思？',
+            options: ['工作交接', '辞职'],
+          },
+        },
+      },
+    ],
+  };
+
+  it('keeps title and question translations', () => {
+    saveTest(db, test, new Date(2026, 9, 1));
+    expect(getTest(db, 'multi')?.test).toEqual(test);
+  });
+
+  it('reports which app languages are missing', () => {
+    saveTest(db, test, new Date(2026, 9, 1));
+    expect(getLibrary(db)[0]).toMatchObject({
+      title: 'IT words',
+      titleI18n: { en: 'IT words', 'zh-Hans': 'IT 词汇' },
+      missingLanguages: ['zh-Hant', 'ko'],
+    });
   });
 });

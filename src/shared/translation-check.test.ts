@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { LangTest } from './test-schema';
-import { checkTranslation } from './translation-check';
+import { checkAddedTranslations } from './translation-check';
 
 const original: LangTest = {
   format: 'langtest',
@@ -12,11 +12,7 @@ const original: LangTest = {
     {
       template: 'multiple_choice',
       prompt: 'A colleague prepares an 引き継ぎ document. What is 引き継ぎ?',
-      options: [
-        'A resignation letter',
-        'A handover of duties',
-        'An expense report',
-      ],
+      options: ['A resignation letter', 'A handover of duties'],
       answer_index: 1,
       targets: [
         { expression: '引き継ぎ', reading: 'ひきつぎ', skill: 'meaning' },
@@ -25,104 +21,170 @@ const original: LangTest = {
     {
       template: 'multiple_choice',
       prompt: "Which word means 'bug'?",
-      options: ['設定', '不具合', '運用'],
+      options: ['設定', '不具合'],
       answer_index: 1,
       targets: [{ expression: '不具合', skill: 'meaning' }],
     },
     {
       template: 'reading',
       prompt: '復旧',
-      context: 'システムが復旧した。',
       answers: ['ふっきゅう'],
       targets: [{ expression: '復旧', skill: 'reading' }],
     },
   ],
 };
 
-function translated(change: (test: LangTest) => void = () => {}): LangTest {
+function withTranslations(
+  change: (test: LangTest) => void = () => {},
+): LangTest {
   const test = structuredClone(original);
-  test.title = 'IT 交接';
+  test.title_i18n = { 'zh-Hans': 'IT 交接' };
   const [first, second] = test.questions;
   if (first.template === 'multiple_choice') {
-    first.prompt = '同事准备了一份引き継ぎ文件。引き継ぎ是什么意思？';
-    first.options = ['辞职信', '工作交接', '报销单'];
+    first.i18n = {
+      'zh-Hans': {
+        prompt: '同事准备了一份引き継ぎ文件。引き継ぎ是什么意思？',
+        options: ['辞职信', '工作交接'],
+      },
+    };
   }
   if (second.template === 'multiple_choice') {
-    second.prompt = '哪个词的意思是"bug"？';
+    second.i18n = { 'zh-Hans': { prompt: '哪个词的意思是"bug"？' } };
   }
   change(test);
   return test;
 }
 
-describe('checkTranslation', () => {
-  it('accepts a proper translation', () => {
-    expect(checkTranslation(original, translated())).toEqual([]);
+const check = (updated: LangTest) =>
+  checkAddedTranslations(original, updated, ['zh-Hans']);
+
+describe('checkAddedTranslations', () => {
+  it('accepts added translations', () => {
+    expect(check(withTranslations())).toEqual([]);
   });
 
-  it('rejects a changed answer', () => {
-    const problems = checkTranslation(
-      original,
-      translated((t) => {
-        if (t.questions[0].template === 'multiple_choice')
-          t.questions[0].answer_index = 0;
-      }),
-    );
-    expect(problems).toEqual(['Question 1: answer_index changed']);
+  it('rejects any change outside the new translations', () => {
+    expect(
+      check(
+        withTranslations((t) => {
+          if (t.questions[0].template === 'multiple_choice')
+            t.questions[0].answer_index = 0;
+        }),
+      ),
+    ).toEqual(['the test itself changed, not just the translations']);
+    expect(check(withTranslations((t) => (t.title = 'Other')))).toEqual([
+      'the test itself changed, not just the translations',
+    ]);
+    expect(
+      check(
+        withTranslations((t) => {
+          if (t.questions[2].template === 'reading')
+            t.questions[2].answers = ['ふくきゅう'];
+        }),
+      ),
+    ).toEqual(['the test itself changed, not just the translations']);
   });
 
-  it('rejects a changed Japanese option', () => {
-    const problems = checkTranslation(
-      original,
-      translated((t) => {
-        if (t.questions[1].template === 'multiple_choice')
-          t.questions[1].options[0] = '设定';
-      }),
-    );
-    expect(problems).toEqual(['Question 2: Japanese option 1 changed']);
-  });
-
-  it('rejects a prompt that lost the Japanese word', () => {
-    const problems = checkTranslation(
-      original,
-      translated((t) => {
-        if (t.questions[0].template === 'multiple_choice')
-          t.questions[0].prompt = '交接是什么意思？';
-      }),
-    );
-    expect(problems).toEqual([
-      'Question 1: Japanese text “引き継ぎ” missing from the prompt',
+  it('rejects changes to translations that already existed', () => {
+    const base = withTranslations();
+    const updated = structuredClone(base);
+    updated.title_i18n = {
+      ...updated.title_i18n,
+      ko: 'IT 인계',
+      'zh-Hans': '改了',
+    };
+    const [first, second] = updated.questions;
+    if (
+      first.template === 'multiple_choice' &&
+      second.template === 'multiple_choice'
+    ) {
+      first.i18n = {
+        ...first.i18n,
+        ko: {
+          prompt: '引き継ぎ는 무엇인가요?',
+          options: ['사직서', '업무 인계'],
+        },
+      };
+      second.i18n = {
+        ...second.i18n,
+        ko: { prompt: '"bug"를 뜻하는 단어는?' },
+      };
+    }
+    expect(checkAddedTranslations(base, updated, ['ko'])).toEqual([
+      'the test itself changed, not just the translations',
     ]);
   });
 
-  it('rejects any change to a reading question', () => {
-    const problems = checkTranslation(
-      original,
-      translated((t) => {
-        if (t.questions[2].template === 'reading')
-          t.questions[2].answers = ['ふくきゅう'];
-      }),
-    );
-    expect(problems).toEqual(['Question 3: reading question changed']);
+  it('reports missing languages', () => {
+    expect(
+      check(
+        withTranslations((t) => {
+          t.title_i18n = undefined;
+          if (t.questions[1].template === 'multiple_choice')
+            t.questions[1].i18n = undefined;
+        }),
+      ),
+    ).toEqual(['title: zh-Hans missing', 'Question 2: zh-Hans missing']);
   });
 
-  it('rejects changed targets, ids and question counts', () => {
+  it('rejects a translated prompt that lost the Japanese word', () => {
     expect(
-      checkTranslation(
-        original,
-        translated((t) => (t.questions[0].targets[0].expression = '交接')),
+      check(
+        withTranslations((t) => {
+          if (t.questions[0].template === 'multiple_choice')
+            t.questions[0].i18n!['zh-Hans']!.prompt = '交接是什么意思？';
+        }),
       ),
-    ).toEqual(['Question 1: targets changed']);
+    ).toEqual(['Question 1: zh-Hans prompt lost “引き継ぎ”']);
+  });
+
+  it('rejects translated Japanese options', () => {
     expect(
-      checkTranslation(
-        original,
-        translated((t) => (t.test_id = 'other')),
+      check(
+        withTranslations((t) => {
+          if (t.questions[1].template === 'multiple_choice')
+            t.questions[1].i18n!['zh-Hans']!.options = ['设定', '不具合'];
+        }),
       ),
-    ).toEqual(['test_id changed']);
-    expect(
-      checkTranslation(
-        original,
-        translated((t) => t.questions.pop()),
-      ),
-    ).toEqual(['question count changed from 3 to 2']);
+    ).toEqual(['Question 2: zh-Hans changed Japanese option 1']);
+  });
+});
+
+describe('checkAddedTranslations and field order', () => {
+  it('does not care in which order Claude writes the fields', () => {
+    const reordered = JSON.parse(
+      JSON.stringify(original, [
+        'questions',
+        'title',
+        'test_id',
+        'language',
+        'format_version',
+        'format',
+        'targets',
+        'skill',
+        'reading',
+        'expression',
+        'answer_index',
+        'options',
+        'prompt',
+        'template',
+        'answers',
+      ]),
+    ) as LangTest;
+    reordered.title_i18n = { ko: 'IT 인계' };
+    const [first, second] = reordered.questions;
+    if (
+      first.template === 'multiple_choice' &&
+      second.template === 'multiple_choice'
+    ) {
+      first.i18n = {
+        ko: {
+          options: ['사직서', '업무 인계'],
+          prompt: '引き継ぎ는 무엇인가요?',
+        },
+      };
+      second.i18n = { ko: { prompt: '"bug"를 뜻하는 단어는?' } };
+    }
+    expect(checkAddedTranslations(original, reordered, ['ko'])).toEqual([]);
   });
 });

@@ -1,6 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite';
 import { z } from 'zod';
-import { LANGUAGES } from '../shared/api';
+import { LANGUAGES, type Language } from '../shared/api';
 import { LangTest } from '../shared/test-schema';
 import { getBriefData, getSettings } from './database';
 import { localDay } from './scheduler';
@@ -54,6 +54,10 @@ Rules:
 - reading: "prompt" is the word in kanji, "answers" lists every valid reading in hiragana only. Add a "context" sentence when the reading depends on it.
 - multiple_choice: 4 options, exactly one correct, no duplicates, plausible distractors.
 - Language: write every question prompt, every option that is a meaning or explanation, and the "title" in ${brief.learner.prompt_language}. Japanese words, readings, example sentences and "context" stay in Japanese. Never write prompts or meanings in English unless the language above is English.
+- Translations: the learner can switch the app language, so also fill in ${TRANSLATION_KEYS}:
+  - "title_i18n": the title in each language.
+  - "i18n" on every multiple_choice question: { "prompt": ..., "options": [...] } per language. Include "options" only when the options are meanings or explanations, in the same order as "options". Leave it out when the options are Japanese words.
+  - Japanese words, readings and sentences stay in Japanese in every language.
 - Use "test_id": "claude-${brief.date}-" followed by 4 random letters, and a short descriptive "title".
 - Double-check every reading. A wrong answer key teaches the wrong thing.
 
@@ -65,23 +69,26 @@ ${JSON.stringify(brief, null, 2)}
 `;
 }
 
-export function translatePrompt(test: LangTest, language: string): string {
-  return `Translate this Kotoba practice test for a learner whose app language is ${language}.
+const TRANSLATION_KEYS = LANGUAGES.map(
+  (language) => `"${language.code}" (${language.english})`,
+).join(', ');
 
-Return ONLY the translated test as one JSON object with exactly the same structure. No explanation, no Markdown code fences.
+export function translatePrompt(test: LangTest, languages: Language[]): string {
+  const wanted = LANGUAGES.filter((language) =>
+    languages.includes(language.code),
+  )
+    .map((language) => `"${language.code}" (${language.english})`)
+    .join(', ');
+  return `Add translations to this Kotoba practice test so the learner can read it in other app languages.
 
-Translate into ${language}:
-- "title"
-- every "prompt" of a multiple_choice question
-- every multiple_choice option that is a meaning, definition or explanation (not a Japanese word)
+Return ONLY the complete test as one JSON object. No explanation, no Markdown code fences.
 
-Keep exactly as they are, character for character:
-- "format", "format_version", "test_id", "language"
-- the order and number of questions, every "template", "answer_index" and "targets"
-- reading questions entirely: "prompt", "answers" and "context"
-- every Japanese word, reading or sentence, wherever it appears
+Add these languages: ${wanted}.
+- "title_i18n": add the title in each of these languages.
+- "i18n" on every multiple_choice question: add { "prompt": ..., "options": [...] } for each of these languages. Include "options" only when the options are meanings or explanations, in the same order as "options". Leave it out when the options are Japanese words.
+- Japanese words, readings and sentences stay in Japanese in every language.
 
-If something is already in ${language}, leave it unchanged.
+Do not change anything else, character for character: every other field, existing translations, the order and number of questions, "answer_index", "targets", and reading questions.
 
 Test:
 ${JSON.stringify(test, null, 2)}

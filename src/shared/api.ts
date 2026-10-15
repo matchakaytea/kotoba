@@ -1,5 +1,8 @@
 import { z } from 'zod';
+import { Language, LANGUAGES } from './languages';
 import { Target, type Question } from './test-schema';
+
+export { Language, LANGUAGES };
 
 export const AttemptInput = z.strictObject({
   testId: z.string().min(1).max(200),
@@ -49,17 +52,6 @@ export type ImportReport = {
   imported: { file: string; title: string; questions: number }[];
   rejected: { file: string; errors: string[] }[];
 };
-
-export const Language = z.enum(['en', 'zh-Hans', 'zh-Hant', 'ko']);
-
-export type Language = z.infer<typeof Language>;
-
-export const LANGUAGES: { code: Language; name: string; english: string }[] = [
-  { code: 'en', name: 'English', english: 'English' },
-  { code: 'zh-Hans', name: '简体中文', english: 'Simplified Chinese' },
-  { code: 'zh-Hant', name: '繁體中文', english: 'Traditional Chinese' },
-  { code: 'ko', name: '한국어', english: 'Korean' },
-];
 
 export const TARGET_LANGUAGES = [
   { code: 'ja', available: true },
@@ -115,17 +107,18 @@ export const DEFAULT_SETTINGS: Settings = {
 
 export type Mistake = {
   answeredAt: string;
-  prompt: string | null;
   answer: string;
-  expected: string | null;
+  question: Question | null;
   targets: string[];
 };
 
 export type LibraryTest = {
   id: string;
   title: string;
+  titleI18n: Partial<Record<Language, string>>;
   importedAt: string;
   questions: number;
+  missingLanguages: Language[];
 };
 
 export interface KotobaApi {

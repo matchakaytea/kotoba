@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { gradeMultipleChoice, type GradeResult } from '../shared/grading';
+import { localizeQuestion } from '../shared/localize';
 import type { MultipleChoiceQuestion } from '../shared/test-schema';
+import { useI18n } from './i18n/i18n';
 
 type Props = {
   question: MultipleChoiceQuestion;
@@ -9,18 +11,21 @@ type Props = {
 };
 
 export function MultipleChoice({ question, answered, onAnswer }: Props) {
+  const { language } = useI18n();
   const [chosen, setChosen] = useState<number | null>(null);
+  const shown = localizeQuestion(question, language);
+  const optionsTranslated = Boolean(question.i18n?.[language]?.options);
 
   function choose(index: number) {
     setChosen(index);
-    onAnswer(gradeMultipleChoice(question, index), question.options[index]);
+    onAnswer(gradeMultipleChoice(shown, index), question.options[index]);
   }
 
   useEffect(() => {
     if (answered) return;
     function onKeyDown(event: KeyboardEvent) {
       const index = Number(event.key) - 1;
-      if (index >= 0 && index < question.options.length) {
+      if (index >= 0 && index < shown.options.length) {
         choose(index);
       }
     }
@@ -37,13 +42,13 @@ export function MultipleChoice({ question, answered, onAnswer }: Props) {
 
   return (
     <section>
-      <p className="prompt-text">{question.prompt}</p>
+      <p className="prompt-text">{shown.prompt}</p>
       <div className="options">
-        {question.options.map((option, index) => (
+        {shown.options.map((option, index) => (
           <button
-            key={option}
+            key={`${index}-${option}`}
             className={optionClass(index)}
-            lang="ja"
+            lang={optionsTranslated ? undefined : 'ja'}
             disabled={answered}
             onClick={() => choose(index)}
           >
