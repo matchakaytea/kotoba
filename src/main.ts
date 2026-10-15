@@ -1,7 +1,7 @@
 import { app, BrowserWindow, nativeTheme, screen } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
-import { openDatabase } from './main/database';
+import { getSettings, openDatabase } from './main/database';
 import { inboxDirs } from './main/inbox';
 import { registerIpcHandlers } from './main/ipc';
 import {
@@ -22,7 +22,7 @@ if (process.env.KOTOBA_USER_DATA) {
 
 let mainWindow: BrowserWindow | null = null;
 
-const createWindow = () => {
+const createWindow = (backgroundColor: string) => {
   const stateFile = path.join(app.getPath('userData'), 'window-state.json');
   const state = loadWindowState(
     stateFile,
@@ -39,7 +39,7 @@ const createWindow = () => {
     minHeight: MIN_SIZE.height,
     title: 'kotoba',
     autoHideMenuBar: true,
-    backgroundColor: nativeTheme.shouldUseDarkColors ? '#18181b' : '#fafaf7',
+    backgroundColor,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -89,13 +89,14 @@ app.whenReady().then(() => {
       event.senderFrame === mainWindow.webContents.mainFrame,
   });
 
-  createWindow();
+  const background = () => windowBackground(getSettings(db).theme);
+  createWindow(background());
 
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
+      createWindow(background());
     }
   });
 });
@@ -108,3 +109,18 @@ app.on('window-all-closed', () => {
     app.quit();
   }
 });
+
+const SKIN_BACKGROUNDS: Record<string, string> = {
+  washi: '#f4efe4',
+  sakura: '#fff5f7',
+  matcha: '#eef2e6',
+  'tokyo-night': '#0f1226',
+  mochi: '#fdf8ee',
+};
+
+function windowBackground(theme: string): string {
+  return (
+    SKIN_BACKGROUNDS[theme] ??
+    (nativeTheme.shouldUseDarkColors ? '#18181b' : '#f7f7f4')
+  );
+}

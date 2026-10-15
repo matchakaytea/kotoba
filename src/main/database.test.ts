@@ -483,6 +483,7 @@ describe('settings', () => {
   it('saves and reloads settings', () => {
     const settings = {
       language: 'ko' as const,
+      theme: 'matcha' as const,
       targetLanguage: 'ja' as const,
       level: 'JLPT N1',
       topics: ['finance'],
@@ -612,6 +613,7 @@ describe('settings saved before languages existed', () => {
     );
     expect(getSettings(db)).toEqual({
       language: 'en',
+      theme: 'default',
       targetLanguage: 'ja',
       level: 'JLPT N3',
       topics: ['travel'],

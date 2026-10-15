@@ -9,6 +9,7 @@ import {
   type Session,
   type SessionItem,
   type Summary,
+  type SettingsInput,
   type Today,
 } from '../shared/api';
 import { Question, type LangTest, type Target } from '../shared/test-schema';
@@ -414,7 +415,10 @@ export function getSettings(db: DatabaseSync): Settings {
   return parsed.success ? parsed.data : DEFAULT_SETTINGS;
 }
 
-export function saveSettings(db: DatabaseSync, settings: Settings): Settings {
+export function saveSettings(
+  db: DatabaseSync,
+  settings: SettingsInput,
+): Settings {
   const valid = Settings.parse(settings);
   db.prepare(
     `INSERT INTO settings (key, value) VALUES ('learner', ?)

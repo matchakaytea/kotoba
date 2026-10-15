@@ -72,8 +72,29 @@ export type TargetLanguageCode = (typeof TARGET_LANGUAGES)[number]['code'];
 
 export const TargetLanguage = z.enum(['ja']);
 
+export const Theme = z.enum([
+  'default',
+  'washi',
+  'sakura',
+  'matcha',
+  'tokyo-night',
+  'mochi',
+]);
+
+export type Theme = z.infer<typeof Theme>;
+
+export const THEMES: { code: Theme; name: string }[] = [
+  { code: 'default', name: '' },
+  { code: 'washi', name: 'Washi · 和紙' },
+  { code: 'sakura', name: 'Sakura · 桜' },
+  { code: 'matcha', name: 'Matcha · 抹茶' },
+  { code: 'tokyo-night', name: 'Tokyo night · 東京の夜' },
+  { code: 'mochi', name: 'Mochi · もち' },
+];
+
 export const Settings = z.strictObject({
   language: Language.default('en'),
+  theme: Theme.default('default'),
   targetLanguage: TargetLanguage.default('ja'),
   level: z.string().trim().min(1).max(100),
   topics: z.array(z.string().trim().min(1).max(50)).min(1).max(10),
@@ -81,9 +102,11 @@ export const Settings = z.strictObject({
 });
 
 export type Settings = z.infer<typeof Settings>;
+export type SettingsInput = z.input<typeof Settings>;
 
 export const DEFAULT_SETTINGS: Settings = {
   language: 'en',
+  theme: 'default',
   targetLanguage: 'ja',
   level: 'around JLPT N2',
   topics: ['IT', 'software engineering', 'workplace'],

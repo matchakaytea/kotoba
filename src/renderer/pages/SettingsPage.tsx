@@ -3,7 +3,9 @@ import {
   LANGUAGES,
   Settings,
   TARGET_LANGUAGES,
+  THEMES,
   type Language,
+  type Theme,
 } from '../../shared/api';
 import { cleanError } from '../format';
 import { useI18n } from '../i18n/i18n';
@@ -31,12 +33,15 @@ const NATIVE_NAMES: Record<(typeof TARGET_LANGUAGES)[number]['code'], string> =
 
 type Props = {
   onLanguageChange: (language: Language) => void;
+  onThemeChange: (theme: Theme) => void;
 };
 
-export function SettingsPage({ onLanguageChange }: Props) {
+export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
   const { t } = useI18n();
   const [language, setLanguage] = useState<Language>('en');
   const [savedLanguage, setSavedLanguage] = useState<Language>('en');
+  const [theme, setTheme] = useState<Theme>('default');
+  const [savedTheme, setSavedTheme] = useState<Theme>('default');
   const [level, setLevel] = useState('');
   const [levelChoice, setLevelChoice] = useState<LevelChoice>('N2');
   const [topics, setTopics] = useState('');
@@ -44,25 +49,35 @@ export function SettingsPage({ onLanguageChange }: Props) {
   const [loaded, setLoaded] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
 
-  const savedLanguageRef = useRef<Language>('en');
-  savedLanguageRef.current = savedLanguage;
+  const savedRef = useRef({ language: savedLanguage, theme: savedTheme });
+  savedRef.current = { language: savedLanguage, theme: savedTheme };
 
   useEffect(() => {
     window.kotoba.getSettings().then((settings) => {
       setLanguage(settings.language);
       setSavedLanguage(settings.language);
+      setTheme(settings.theme);
+      setSavedTheme(settings.theme);
       setLevel(settings.level);
       setLevelChoice(levelChoiceOf(settings.level));
       setTopics(settings.topics.join(', '));
       setQuestionCount(settings.questionCount);
       setLoaded(true);
     });
-    return () => onLanguageChange(savedLanguageRef.current);
-  }, [onLanguageChange]);
+    return () => {
+      onLanguageChange(savedRef.current.language);
+      onThemeChange(savedRef.current.theme);
+    };
+  }, [onLanguageChange, onThemeChange]);
 
   function previewLanguage(next: Language) {
     setLanguage(next);
     onLanguageChange(next);
+  }
+
+  function previewTheme(next: Theme) {
+    setTheme(next);
+    onThemeChange(next);
   }
 
   function chooseLevel(choice: LevelChoice) {
@@ -78,6 +93,7 @@ export function SettingsPage({ onLanguageChange }: Props) {
     event.preventDefault();
     const parsed = Settings.safeParse({
       language,
+      theme,
       targetLanguage: 'ja',
       level,
       topics: topics
@@ -93,7 +109,9 @@ export function SettingsPage({ onLanguageChange }: Props) {
     try {
       const saved = await window.kotoba.saveSettings(parsed.data);
       setSavedLanguage(saved.language);
+      setSavedTheme(saved.theme);
       onLanguageChange(saved.language);
+      onThemeChange(saved.theme);
       setStatus({ ok: true });
     } catch (e) {
       setStatus({ ok: false, error: cleanError(e) });
@@ -112,30 +130,55 @@ export function SettingsPage({ onLanguageChange }: Props) {
       </header>
 
       <form className="form" onSubmit={save} onChange={() => setStatus(null)}>
-        <label className="field">
-          <span className="field-label">{t('settings.language')}</span>
-          <span className="select input-medium">
-            <select
-              value={language}
-              onChange={(e) => previewLanguage(e.target.value as Language)}
-            >
-              {LANGUAGES.map((option) => (
-                <option
-                  key={option.code}
-                  value={option.code}
-                  lang={option.code}
-                >
-                  {option.name}
-                </option>
-              ))}
-            </select>
-          </span>
-          <span className="field-hint">
-            {language !== savedLanguage
-              ? t('settings.languageUnsaved')
-              : t('settings.languageHint')}
-          </span>
-        </label>
+        <div className="field-row">
+          <label className="field">
+            <span className="field-label">{t('settings.language')}</span>
+            <span className="select input-medium">
+              <select
+                value={language}
+                onChange={(e) => previewLanguage(e.target.value as Language)}
+              >
+                {LANGUAGES.map((option) => (
+                  <option
+                    key={option.code}
+                    value={option.code}
+                    lang={option.code}
+                  >
+                    {option.name}
+                  </option>
+                ))}
+              </select>
+            </span>
+            <span className="field-hint">
+              {language !== savedLanguage
+                ? t('settings.languageUnsaved')
+                : t('settings.languageHint')}
+            </span>
+          </label>
+
+          <label className="field">
+            <span className="field-label">{t('settings.theme')}</span>
+            <span className="select input-medium">
+              <select
+                value={theme}
+                onChange={(e) => previewTheme(e.target.value as Theme)}
+              >
+                {THEMES.map((option) => (
+                  <option key={option.code} value={option.code}>
+                    {option.code === 'default'
+                      ? t('settings.themeDefault')
+                      : option.name}
+                  </option>
+                ))}
+              </select>
+            </span>
+            <span className="field-hint">
+              {theme !== savedTheme
+                ? t('settings.themeUnsaved')
+                : t('settings.themeHint')}
+            </span>
+          </label>
+        </div>
 
         <div className="field-row">
           <div className="field">

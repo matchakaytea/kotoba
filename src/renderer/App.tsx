@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { ImportReport, Language, Session } from '../shared/api';
+import type { ImportReport, Language, Session, Theme } from '../shared/api';
 import { cleanError } from './format';
 import { I18nProvider } from './i18n/i18n';
 import { InboxPage } from './pages/InboxPage';
@@ -12,6 +12,7 @@ import { TestRunner } from './TestRunner';
 
 export function App() {
   const [language, setLanguage] = useState<Language | null>(null);
+  const [theme, setTheme] = useState<Theme>('default');
   const [page, setPage] = useState<Page>('today');
   const [session, setSession] = useState<Session | null>(null);
   const [claudeAvailable, setClaudeAvailable] = useState(false);
@@ -22,12 +23,23 @@ export function App() {
   useEffect(() => {
     window.kotoba
       .getSettings()
-      .then((settings) => setLanguage(settings.language))
+      .then((settings) => {
+        setLanguage(settings.language);
+        setTheme(settings.theme);
+      })
       .catch(() => setLanguage('en'));
     window.kotoba
       .claudeStatus()
       .then((status) => setClaudeAvailable(status.found));
   }, []);
+
+  useEffect(() => {
+    if (theme === 'default') {
+      delete document.documentElement.dataset.theme;
+    } else {
+      document.documentElement.dataset.theme = theme;
+    }
+  }, [theme]);
 
   async function start() {
     const next = await window.kotoba.getSession();
@@ -77,7 +89,10 @@ export function App() {
             {page === 'library' && <LibraryPage />}
             {page === 'inbox' && <InboxPage />}
             {page === 'settings' && (
-              <SettingsPage onLanguageChange={setLanguage} />
+              <SettingsPage
+                onLanguageChange={setLanguage}
+                onThemeChange={setTheme}
+              />
             )}
           </main>
         </div>
