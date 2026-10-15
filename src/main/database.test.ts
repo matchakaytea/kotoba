@@ -1,9 +1,11 @@
-import type { DatabaseSync } from 'node:sqlite';
+import { DatabaseSync } from 'node:sqlite';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { AttemptInput } from '../shared/api';
 import {
   getSummary,
+  getToday,
   migrate,
+  MIGRATIONS,
   openDatabase,
   recordAttempt,
   schemaVersion,
@@ -32,12 +34,31 @@ function count(table: string): number {
 
 describe('migrations', () => {
   it('brings a new database to the latest version', () => {
-    expect(schemaVersion(db)).toBe(1);
+    expect(schemaVersion(db)).toBe(MIGRATIONS.length);
   });
 
   it('can run again without changing anything', () => {
     migrate(db);
-    expect(schemaVersion(db)).toBe(1);
+    expect(schemaVersion(db)).toBe(MIGRATIONS.length);
+  });
+
+  it('upgrades a version 1 database and keeps its data', () => {
+    const old = new DatabaseSync(':memory:');
+    old.exec(MIGRATIONS[0]);
+    old.exec('PRAGMA user_version = 1');
+    old
+      .prepare(
+        "INSERT INTO targets (expression, skill, created_at) VALUES ('復旧', 'reading', 'x')",
+      )
+      .run();
+
+    migrate(old);
+
+    expect(schemaVersion(old)).toBe(MIGRATIONS.length);
+    const row = old.prepare('SELECT COUNT(*) AS n FROM targets').get() as {
+      n: number;
+    };
+    expect(row.n).toBe(1);
   });
 });
 
@@ -103,6 +124,87 @@ describe('recordAttempt', () => {
     ).toThrow();
     expect(count('attempts')).toBe(0);
     expect(count('targets')).toBe(0);
+  });
+});
+
+describe('scheduling', () => {
+  const monday = new Date(2026, 9, 12, 9, 0);
+  const tuesday = new Date(2026, 9, 13, 9, 0);
+
+  function dueDay(): string {
+    const row = db.prepare('SELECT due_day FROM review_states').get() as {
+      due_day: string;
+    };
+    return row.due_day;
+  }
+
+  it('creates a review state for each answered target', () => {
+    recordAttempt(db, attempt, monday);
+    expect(count('review_states')).toBe(1);
+  });
+
+  it('brings a wrong answer back the next day', () => {
+    recordAttempt(db, { ...attempt, correct: false }, monday);
+    expect(dueDay()).toBe('2026-10-13');
+  });
+
+  it('only counts the first answer of the day', () => {
+    recordAttempt(db, { ...attempt, correct: false }, monday);
+    recordAttempt(db, attempt, new Date(2026, 9, 12, 20, 0));
+    expect(dueDay()).toBe('2026-10-13');
+    expect(count('attempts')).toBe(2);
+  });
+
+  it('updates the schedule on a later day', () => {
+    recordAttempt(db, { ...attempt, correct: false }, monday);
+    recordAttempt(db, attempt, tuesday);
+    expect(dueDay() > '2026-10-14').toBe(true);
+  });
+});
+
+describe('getToday', () => {
+  const monday = new Date(2026, 9, 12, 9, 0);
+
+  it('is empty for a new database', () => {
+    expect(getToday(db, monday)).toMatchObject({
+      today: '2026-10-12',
+      due: [],
+      nextDueDay: null,
+    });
+  });
+
+  it('lists targets that are due, and not ones scheduled later', () => {
+    recordAttempt(db, { ...attempt, correct: false }, monday);
+    recordAttempt(
+      db,
+      {
+        ...attempt,
+        targets: [
+          { expression: '障害', reading: 'しょうがい', skill: 'reading' },
+        ],
+      },
+      monday,
+    );
+
+    const tuesday = getToday(db, new Date(2026, 9, 13, 9, 0));
+    expect(tuesday.due).toEqual([
+      {
+        expression: '復旧',
+        reading: 'ふっきゅう',
+        skill: 'reading',
+        dueDay: '2026-10-13',
+      },
+    ]);
+    expect(tuesday.nextDueDay! > '2026-10-13').toBe(true);
+  });
+
+  it('treats targets without a review state as due', () => {
+    db.prepare(
+      "INSERT INTO targets (expression, skill, created_at) VALUES ('導入', 'reading', 'x')",
+    ).run();
+    expect(getToday(db, monday).due).toEqual([
+      { expression: '導入', reading: null, skill: 'reading', dueDay: null },
+    ]);
   });
 });
 

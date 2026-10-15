@@ -48,7 +48,7 @@ much as finishing it.
 - [x] 1 Test schema + validator – Zod schema, sample test, unit tests
 - [x] 2 Take a test – React UI, local grading, wanakana input
 - [x] 3 Save attempts – SQLite, migrations, preload API
-- [ ] 4 Scheduling – FSRS, Today screen
+- [x] 4 Scheduling – FSRS, Today screen
 - [ ] 5 Inbox import + brief export
 - [ ] 6 Daily generation with `claude -p`
 - [ ] 7 AI grading for open answers

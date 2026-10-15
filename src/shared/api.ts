@@ -18,7 +18,22 @@ export type Summary = {
   targets: number;
 };
 
+export type DueTarget = {
+  expression: string;
+  reading: string | null;
+  skill: string;
+  dueDay: string | null;
+};
+
+export type Today = {
+  today: string;
+  due: DueTarget[];
+  nextDueDay: string | null;
+  summary: Summary;
+};
+
 export interface KotobaApi {
   saveAttempt(input: AttemptInput): Promise<void>;
   getSummary(): Promise<Summary>;
+  getToday(): Promise<Today>;
 }

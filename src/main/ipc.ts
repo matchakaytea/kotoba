@@ -1,7 +1,7 @@
 import { ipcMain, type IpcMainInvokeEvent } from 'electron';
 import type { DatabaseSync } from 'node:sqlite';
 import { AttemptInput } from '../shared/api';
-import { getSummary, recordAttempt } from './database';
+import { getSummary, getToday, recordAttempt } from './database';
 
 export function registerIpcHandlers(
   db: DatabaseSync,
@@ -21,5 +21,10 @@ export function registerIpcHandlers(
   ipcMain.handle('summary:get', (event) => {
     guard(event);
     return getSummary(db);
+  });
+
+  ipcMain.handle('today:get', (event) => {
+    guard(event);
+    return getToday(db);
   });
 }

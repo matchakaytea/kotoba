@@ -1,8 +1,15 @@
 import { DatabaseSync } from 'node:sqlite';
-import type { AttemptInput, Summary } from '../shared/api';
+import type { AttemptInput, DueTarget, Summary, Today } from '../shared/api';
 import type { Target } from '../shared/test-schema';
+import {
+  localDay,
+  parseCard,
+  review,
+  serializeCard,
+  type ReviewState,
+} from './scheduler';
 
-const MIGRATIONS: string[] = [
+export const MIGRATIONS: string[] = [
   `
   CREATE TABLE targets (
     id INTEGER PRIMARY KEY,
@@ -28,6 +35,16 @@ const MIGRATIONS: string[] = [
     target_id INTEGER NOT NULL REFERENCES targets (id),
     PRIMARY KEY (attempt_id, target_id)
   );
+  `,
+  `
+  CREATE TABLE review_states (
+    target_id INTEGER PRIMARY KEY REFERENCES targets (id),
+    card TEXT NOT NULL,
+    due_day TEXT NOT NULL,
+    last_review_day TEXT NOT NULL
+  );
+
+  CREATE INDEX review_states_due_day ON review_states (due_day);
   `,
 ];
 
@@ -84,10 +101,29 @@ export function recordAttempt(
       'INSERT OR IGNORE INTO attempt_targets (attempt_id, target_id) VALUES (?, ?)',
     );
     for (const target of input.targets) {
-      link.run(attemptId, upsertTarget(db, target, now));
+      const targetId = upsertTarget(db, target, now);
+      link.run(attemptId, targetId);
+      scheduleTarget(db, targetId, input.correct, now);
     }
     return attemptId;
   });
+}
+
+export function getToday(db: DatabaseSync, now = new Date()): Today {
+  const today = localDay(now);
+  const due = db
+    .prepare(
+      `SELECT t.expression, t.reading, t.skill, r.due_day AS dueDay
+       FROM targets t
+       LEFT JOIN review_states r ON r.target_id = t.id
+       WHERE r.due_day IS NULL OR r.due_day <= ?
+       ORDER BY r.due_day IS NULL, r.due_day, t.id`,
+    )
+    .all(today) as DueTarget[];
+  const next = db
+    .prepare('SELECT MIN(due_day) AS day FROM review_states WHERE due_day > ?')
+    .get(today) as { day: string | null };
+  return { today, due, nextDueDay: next.day, summary: getSummary(db) };
 }
 
 export function getSummary(db: DatabaseSync): Summary {
@@ -122,6 +158,41 @@ function upsertTarget(db: DatabaseSync, target: Target, now: Date): number {
     id: number;
   };
   return row.id;
+}
+
+function scheduleTarget(
+  db: DatabaseSync,
+  targetId: number,
+  correct: boolean,
+  now: Date,
+): void {
+  const row = db
+    .prepare(
+      'SELECT card, due_day, last_review_day FROM review_states WHERE target_id = ?',
+    )
+    .get(targetId) as
+    | { card: string; due_day: string; last_review_day: string }
+    | undefined;
+
+  const previous: ReviewState | null = row
+    ? {
+        card: parseCard(row.card),
+        dueDay: row.due_day,
+        lastReviewDay: row.last_review_day,
+      }
+    : null;
+
+  const next = review(previous, correct, now);
+  if (!next) return;
+
+  db.prepare(
+    `INSERT INTO review_states (target_id, card, due_day, last_review_day)
+     VALUES (?, ?, ?, ?)
+     ON CONFLICT (target_id) DO UPDATE SET
+       card = excluded.card,
+       due_day = excluded.due_day,
+       last_review_day = excluded.last_review_day`,
+  ).run(targetId, serializeCard(next.card), next.dueDay, next.lastReviewDay);
 }
 
 function transaction<T>(db: DatabaseSync, work: () => T): T {
