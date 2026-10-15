@@ -1,11 +1,15 @@
 import { DatabaseSync } from 'node:sqlite';
-import type {
-  AttemptInput,
-  DueTarget,
-  Session,
-  SessionItem,
-  Summary,
-  Today,
+import {
+  DEFAULT_SETTINGS,
+  Settings,
+  type AttemptInput,
+  type DueTarget,
+  type LibraryTest,
+  type Mistake,
+  type Session,
+  type SessionItem,
+  type Summary,
+  type Today,
 } from '../shared/api';
 import { Question, type LangTest, type Target } from '../shared/test-schema';
 import {
@@ -75,6 +79,12 @@ export const MIGRATIONS: string[] = [
   );
 
   CREATE INDEX question_targets_target ON question_targets (target_id);
+  `,
+  `
+  CREATE TABLE settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
   `,
 ];
 
@@ -310,6 +320,78 @@ export function getSummary(db: DatabaseSync): Summary {
     targets: number;
   };
   return { ...attempts, ...targets };
+}
+
+export function getMistakes(db: DatabaseSync, limit = 100): Mistake[] {
+  const rows = db
+    .prepare(
+      `SELECT a.answer, a.answered_at AS answeredAt, q.body,
+              (SELECT group_concat(t.expression, '、')
+                 FROM attempt_targets at JOIN targets t ON t.id = at.target_id
+                 WHERE at.attempt_id = a.id) AS targets
+       FROM attempts a
+       LEFT JOIN questions q
+         ON q.test_id = a.test_id AND q.question_index = a.question_index
+       WHERE a.correct = 0
+       ORDER BY a.answered_at DESC, a.id DESC
+       LIMIT ?`,
+    )
+    .all(limit) as {
+    answer: string;
+    answeredAt: string;
+    body: string | null;
+    targets: string | null;
+  }[];
+
+  return rows.map((row) => {
+    const question = row.body ? Question.safeParse(JSON.parse(row.body)) : null;
+    const parsed = question?.success ? question.data : null;
+    return {
+      answeredAt: row.answeredAt,
+      prompt: parsed?.prompt ?? null,
+      answer: row.answer,
+      expected: parsed ? expectedAnswer(parsed) : null,
+      targets: row.targets ? row.targets.split('、') : [],
+    };
+  });
+}
+
+function expectedAnswer(question: Question): string {
+  switch (question.template) {
+    case 'multiple_choice':
+      return question.options[question.answer_index];
+    case 'reading':
+      return question.answers.join(' / ');
+  }
+}
+
+export function getLibrary(db: DatabaseSync): LibraryTest[] {
+  return db
+    .prepare(
+      `SELECT t.id, t.title, t.imported_at AS importedAt,
+              (SELECT COUNT(*) FROM questions q WHERE q.test_id = t.id) AS questions
+       FROM tests t
+       ORDER BY t.imported_at DESC`,
+    )
+    .all() as LibraryTest[];
+}
+
+export function getSettings(db: DatabaseSync): Settings {
+  const row = db
+    .prepare("SELECT value FROM settings WHERE key = 'learner'")
+    .get() as { value: string } | undefined;
+  if (!row) return DEFAULT_SETTINGS;
+  const parsed = Settings.safeParse(JSON.parse(row.value));
+  return parsed.success ? parsed.data : DEFAULT_SETTINGS;
+}
+
+export function saveSettings(db: DatabaseSync, settings: Settings): Settings {
+  const valid = Settings.parse(settings);
+  db.prepare(
+    `INSERT INTO settings (key, value) VALUES ('learner', ?)
+     ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
+  ).run(JSON.stringify(valid));
+  return valid;
 }
 
 function upsertTarget(db: DatabaseSync, target: Target, now: Date): number {

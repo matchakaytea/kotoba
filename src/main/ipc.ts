@@ -2,9 +2,18 @@ import { clipboard, ipcMain, shell, type IpcMainInvokeEvent } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
-import { AttemptInput, type ImportReport } from '../shared/api';
+import { AttemptInput, Settings, type ImportReport } from '../shared/api';
 import { briefPrompt, buildBrief } from './brief';
-import { buildSession, getSummary, getToday, recordAttempt } from './database';
+import {
+  buildSession,
+  getLibrary,
+  getMistakes,
+  getSettings,
+  getSummary,
+  getToday,
+  recordAttempt,
+  saveSettings,
+} from './database';
 import { extractJson, findClaude, runClaude } from './generate';
 import { ensureInboxDirs, importInbox, type InboxDirs } from './inbox';
 import { localDay } from './scheduler';
@@ -52,6 +61,12 @@ export function registerIpcHandlers({
   handle('summary:get', () => getSummary(db));
   handle('today:get', () => getToday(db));
   handle('session:get', () => buildSession(db));
+  handle('mistakes:get', () => getMistakes(db));
+  handle('library:get', () => getLibrary(db));
+  handle('settings:get', () => getSettings(db));
+  handle('settings:save', (_event, payload) =>
+    saveSettings(db, Settings.parse(payload)),
+  );
   handle('inbox:import', () => importAndRemember());
 
   handle('inbox:dismiss', () => {

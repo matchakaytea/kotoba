@@ -12,6 +12,10 @@ const api: KotobaApi = {
   copyBrief: () => ipcRenderer.invoke('brief:copy'),
   claudeStatus: () => ipcRenderer.invoke('claude:status'),
   generateTest: () => ipcRenderer.invoke('claude:generate'),
+  getMistakes: () => ipcRenderer.invoke('mistakes:get'),
+  getLibrary: () => ipcRenderer.invoke('library:get'),
+  getSettings: () => ipcRenderer.invoke('settings:get'),
+  saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings),
 };
 
 contextBridge.exposeInMainWorld('kotoba', api);

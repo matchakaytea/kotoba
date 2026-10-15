@@ -1,9 +1,14 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, nativeTheme, screen } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { openDatabase } from './main/database';
 import { inboxDirs } from './main/inbox';
 import { registerIpcHandlers } from './main/ipc';
+import {
+  loadWindowState,
+  MIN_SIZE,
+  saveWindowState,
+} from './main/window-state';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -18,17 +23,38 @@ if (process.env.KOTOBA_USER_DATA) {
 let mainWindow: BrowserWindow | null = null;
 
 const createWindow = () => {
+  const stateFile = path.join(app.getPath('userData'), 'window-state.json');
+  const state = loadWindowState(
+    stateFile,
+    screen.getAllDisplays().map((display) => display.workArea),
+  );
+
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: state.width,
+    height: state.height,
+    x: state.x,
+    y: state.y,
+    minWidth: MIN_SIZE.width,
+    minHeight: MIN_SIZE.height,
     title: 'kotoba',
+    autoHideMenuBar: true,
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#18181b' : '#fafaf7',
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       sandbox: true,
       nodeIntegration: false,
     },
+  });
+  if (state.maximized) mainWindow.maximize();
+
+  mainWindow.on('close', () => {
+    if (!mainWindow) return;
+    saveWindowState(stateFile, {
+      ...mainWindow.getNormalBounds(),
+      maximized: mainWindow.isMaximized(),
+    });
   });
 
   mainWindow.on('closed', () => {

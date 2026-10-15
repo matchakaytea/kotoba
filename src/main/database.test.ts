@@ -1,15 +1,19 @@
 import { DatabaseSync } from 'node:sqlite';
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { AttemptInput } from '../shared/api';
+import { DEFAULT_SETTINGS, type AttemptInput } from '../shared/api';
 import type { LangTest, Question } from '../shared/test-schema';
 import {
   buildSession,
+  getLibrary,
+  getMistakes,
+  getSettings,
   getSummary,
   getToday,
   migrate,
   MIGRATIONS,
   openDatabase,
   recordAttempt,
+  saveSettings,
   saveTest,
   schemaVersion,
 } from './database';
@@ -355,5 +359,140 @@ describe('getSummary', () => {
     recordAttempt(db, attempt);
     recordAttempt(db, { ...attempt, correct: false });
     expect(getSummary(db)).toEqual({ attempts: 2, correct: 1, targets: 1 });
+  });
+});
+
+describe('getMistakes', () => {
+  const test: LangTest = {
+    format: 'langtest',
+    format_version: 1,
+    test_id: 'm',
+    language: 'ja',
+    title: 'Mistakes test',
+    questions: [
+      {
+        template: 'reading',
+        prompt: '復旧',
+        answers: ['ふっきゅう'],
+        targets: [
+          { expression: '復旧', reading: 'ふっきゅう', skill: 'reading' },
+        ],
+      },
+      {
+        template: 'multiple_choice',
+        prompt: "Which word means 'bug'?",
+        options: ['設定', '不具合'],
+        answer_index: 1,
+        targets: [{ expression: '不具合', skill: 'meaning' }],
+      },
+    ],
+  };
+
+  function answer(
+    questionIndex: number,
+    given: string,
+    correct: boolean,
+    at: Date,
+  ) {
+    const question = test.questions[questionIndex];
+    recordAttempt(
+      db,
+      {
+        testId: 'm',
+        questionIndex,
+        template: question.template,
+        answer: given,
+        correct,
+        targets: question.targets,
+      },
+      at,
+    );
+  }
+
+  it('lists wrong answers, newest first, with the right answer', () => {
+    saveTest(db, test);
+    answer(0, 'ふきゅう', false, new Date(2026, 9, 12, 9, 0));
+    answer(1, '設定', false, new Date(2026, 9, 13, 9, 0));
+    answer(0, 'ふっきゅう', true, new Date(2026, 9, 14, 9, 0));
+
+    expect(getMistakes(db)).toEqual([
+      {
+        answeredAt: new Date(2026, 9, 13, 9, 0).toISOString(),
+        prompt: "Which word means 'bug'?",
+        answer: '設定',
+        expected: '不具合',
+        targets: ['不具合'],
+      },
+      {
+        answeredAt: new Date(2026, 9, 12, 9, 0).toISOString(),
+        prompt: '復旧',
+        answer: 'ふきゅう',
+        expected: 'ふっきゅう',
+        targets: ['復旧'],
+      },
+    ]);
+  });
+
+  it('still lists a mistake whose question is gone', () => {
+    answer(0, 'ふきゅう', false, new Date(2026, 9, 12, 9, 0));
+    expect(getMistakes(db)[0]).toMatchObject({
+      prompt: null,
+      expected: null,
+      answer: 'ふきゅう',
+      targets: ['復旧'],
+    });
+  });
+});
+
+describe('getLibrary', () => {
+  it('lists imported tests, newest first, with question counts', () => {
+    const base = {
+      format: 'langtest',
+      format_version: 1,
+      language: 'ja',
+    } as const;
+    const q: Question = {
+      template: 'reading',
+      prompt: '復旧',
+      answers: ['ふっきゅう'],
+      targets: [{ expression: '復旧', skill: 'reading' }],
+    };
+    saveTest(
+      db,
+      { ...base, test_id: 'old', title: 'Old', questions: [q] },
+      new Date(2026, 9, 1),
+    );
+    saveTest(
+      db,
+      { ...base, test_id: 'new', title: 'New', questions: [q, q] },
+      new Date(2026, 9, 2),
+    );
+    expect(getLibrary(db).map((t) => [t.id, t.questions])).toEqual([
+      ['new', 2],
+      ['old', 1],
+    ]);
+  });
+});
+
+describe('settings', () => {
+  it('uses the defaults until something is saved', () => {
+    expect(getSettings(db)).toEqual(DEFAULT_SETTINGS);
+  });
+
+  it('saves and reloads settings', () => {
+    const settings = {
+      level: 'JLPT N1',
+      topics: ['finance'],
+      questionCount: 25,
+    };
+    saveSettings(db, settings);
+    expect(getSettings(db)).toEqual(settings);
+  });
+
+  it('rejects invalid settings', () => {
+    expect(() =>
+      saveSettings(db, { level: '', topics: [], questionCount: 2 }),
+    ).toThrow();
+    expect(getSettings(db)).toEqual(DEFAULT_SETTINGS);
   });
 });

@@ -59,3 +59,24 @@ describe('briefPrompt', () => {
     expect(prompt).toContain('claude-2026-10-13-');
   });
 });
+
+describe('buildBrief with saved settings', () => {
+  it('uses the level, topics and question count from Settings', async () => {
+    const { saveSettings } = await import('./database');
+    const db = databaseWithMistake();
+    saveSettings(db, {
+      level: 'JLPT N1',
+      topics: ['finance'],
+      questionCount: 25,
+    });
+    const brief = buildBrief(db, tuesday);
+    expect(brief.learner).toMatchObject({
+      level: 'JLPT N1',
+      topics: ['finance'],
+    });
+    expect(brief.question_count).toBe(25);
+    expect(briefPrompt(brief)).toContain(
+      'learner JLPT N1, on these topics: finance',
+    );
+  });
+});

@@ -1,28 +1,26 @@
 import type { DatabaseSync } from 'node:sqlite';
 import { z } from 'zod';
 import { LangTest } from '../shared/test-schema';
-import { getBriefData } from './database';
+import { getBriefData, getSettings } from './database';
 import { localDay } from './scheduler';
 
-export const LEARNER = {
-  level: 'around JLPT N2',
-  topics: ['IT', 'software engineering', 'workplace'],
-  prompt_language: 'en',
-};
-
-const QUESTION_COUNT = 15;
 const MAX_DUE_TARGETS = 40;
 
 export function buildBrief(db: DatabaseSync, now = new Date()) {
   const today = localDay(now);
   const { due, mistakes } = getBriefData(db, now);
+  const settings = getSettings(db);
   return {
     format: 'kotoba-brief',
     format_version: 1,
     date: today,
     language: 'ja',
-    learner: LEARNER,
-    question_count: QUESTION_COUNT,
+    learner: {
+      level: settings.level,
+      topics: settings.topics,
+      prompt_language: 'en',
+    },
+    question_count: settings.questionCount,
     supported_templates: ['reading', 'multiple_choice'],
     due_targets: due.slice(0, MAX_DUE_TARGETS).map((target) => ({
       expression: target.expression,

@@ -50,42 +50,63 @@ export function TestRunner({ session, onExit }: Props) {
     setIndex((i) => i + 1);
   }
 
+  const answered = index + (result ? 1 : 0);
+  const progress = Math.round((answered / questions.length) * 100);
+
   if (index >= questions.length) {
     return (
-      <main>
-        <h1>Done!</h1>
-        <p className="score">
-          {correctCount} / {questions.length} correct
-        </p>
-        <button autoFocus onClick={onExit}>
-          Back to Today
-        </button>
-      </main>
+      <div className="review">
+        <div className="review-done">
+          <p className="page-kicker">{session.title}</p>
+          <h1>Done</h1>
+          <p className="score">
+            {correctCount} / {questions.length} correct
+          </p>
+          <p className="page-sub">
+            Wrong answers come back tomorrow. Right ones come back later.
+          </p>
+          <button className="primary" autoFocus onClick={onExit}>
+            Back to Today
+          </button>
+        </div>
+      </div>
     );
   }
 
   return (
-    <main>
-      <header className="test-header">
+    <div className="review">
+      <header className="review-header">
         <button className="back" title="Back to Today (Esc)" onClick={onExit}>
           ← Today
         </button>
-        <span>{session.title}</span>
-        <span>
+        <div
+          className="progress"
+          role="progressbar"
+          aria-valuenow={answered}
+          aria-valuemin={0}
+          aria-valuemax={questions.length}
+        >
+          <div className="progress-bar" style={{ width: `${progress}%` }} />
+        </div>
+        <span className="review-count">
           {index + 1} / {questions.length}
         </span>
       </header>
-      <QuestionView
-        key={index}
-        question={questions[index]}
-        answered={result !== null}
-        onAnswer={handleAnswer}
-      />
-      {result && <Feedback result={result} onNext={next} />}
-      {saveError && (
-        <p className="save-error">Could not save this answer: {saveError}</p>
-      )}
-    </main>
+      <div className="review-body">
+        <QuestionView
+          key={index}
+          question={questions[index]}
+          answered={result !== null}
+          onAnswer={handleAnswer}
+        />
+        {result && <Feedback result={result} onNext={next} />}
+        {saveError && (
+          <p className="notice error">
+            Could not save this answer: {saveError}
+          </p>
+        )}
+      </div>
+    </div>
   );
 }
 

@@ -8,16 +8,18 @@ type Props = {
 export function Feedback({ result, onNext }: Props) {
   return (
     <div className={result.correct ? 'feedback correct' : 'feedback wrong'}>
-      {result.correct ? (
-        <p>✓ Correct</p>
-      ) : (
-        <>
-          <p>
-            ✗ Answer: <strong>{result.expected}</strong>
-          </p>
-          {result.hint && <p className="hint">{result.hint}</p>}
-        </>
-      )}
+      <div className="feedback-text">
+        {result.correct ? (
+          <p className="feedback-title">✓ Correct</p>
+        ) : (
+          <>
+            <p className="feedback-title">
+              ✗ Answer: <strong lang="ja">{result.expected}</strong>
+            </p>
+            {result.hint && <p className="feedback-hint">{result.hint}</p>}
+          </>
+        )}
+      </div>
       <button autoFocus onClick={onNext}>
         Next →
       </button>
