@@ -9,6 +9,9 @@ export function TodayScreen({ onStart }: Props) {
   const [today, setToday] = useState<Today | null>(null);
   const [report, setReport] = useState<ImportReport | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [generateError, setGenerateError] = useState<string | null>(null);
+  const [claudeFound, setClaudeFound] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function refresh() {
@@ -22,7 +25,22 @@ export function TodayScreen({ onStart }: Props) {
 
   useEffect(() => {
     refresh();
+    window.kotoba.claudeStatus().then((status) => setClaudeFound(status.found));
   }, []);
+
+  async function generate() {
+    setGenerating(true);
+    setGenerateError(null);
+    setMessage(null);
+    try {
+      setReport(await window.kotoba.generateTest());
+      setToday(await window.kotoba.getToday());
+    } catch (e) {
+      setGenerateError(cleanError(e));
+    } finally {
+      setGenerating(false);
+    }
+  }
 
   async function dismissReport() {
     await window.kotoba.dismissImportReport();
@@ -100,10 +118,22 @@ export function TodayScreen({ onStart }: Props) {
         >
           Start review
         </button>
+        {claudeFound && (
+          <button disabled={generating} onClick={generate}>
+            {generating ? 'Generating…' : 'Generate test with Claude'}
+          </button>
+        )}
         <button onClick={copyBrief}>Copy brief for Claude</button>
         <button onClick={() => window.kotoba.openInbox()}>Open inbox</button>
         <button onClick={refresh}>Check inbox</button>
       </div>
+      {generating && (
+        <p className="hint">
+          Claude is writing a test from your due words and mistakes. This
+          usually takes a minute or two.
+        </p>
+      )}
+      {generateError && <p className="save-error">{generateError}</p>}
       {message && <p className="hint">{message}</p>}
 
       <p className="all-time">
@@ -173,4 +203,11 @@ function formatDay(
 ): string {
   const [year, month, date] = day.split('-').map(Number);
   return new Date(year, month - 1, date).toLocaleDateString(undefined, options);
+}
+
+function cleanError(error: unknown): string {
+  return String(error).replace(
+    /^Error: Error invoking remote method '[^']+': (Error: )?/,
+    '',
+  );
 }

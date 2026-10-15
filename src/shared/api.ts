@@ -59,4 +59,6 @@ export interface KotobaApi {
   dismissImportReport(): Promise<void>;
   openInbox(): Promise<void>;
   copyBrief(): Promise<void>;
+  claudeStatus(): Promise<{ found: boolean }>;
+  generateTest(): Promise<ImportReport>;
 }

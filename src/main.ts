@@ -56,6 +56,7 @@ app.whenReady().then(() => {
   registerIpcHandlers({
     db,
     dirs: inboxDirs(userData),
+    workDir: path.join(userData, 'claude-work'),
     isTrustedSender: (event) =>
       mainWindow !== null &&
       event.sender === mainWindow.webContents &&

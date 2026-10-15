@@ -1,19 +1,25 @@
 import { clipboard, ipcMain, shell, type IpcMainInvokeEvent } from 'electron';
+import fs from 'node:fs';
+import path from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
 import { AttemptInput, type ImportReport } from '../shared/api';
 import { briefPrompt, buildBrief } from './brief';
 import { buildSession, getSummary, getToday, recordAttempt } from './database';
+import { extractJson, findClaude, runClaude } from './generate';
 import { ensureInboxDirs, importInbox, type InboxDirs } from './inbox';
+import { localDay } from './scheduler';
 
 type Context = {
   db: DatabaseSync;
   dirs: InboxDirs;
+  workDir: string;
   isTrustedSender: (event: IpcMainInvokeEvent) => boolean;
 };
 
 export function registerIpcHandlers({
   db,
   dirs,
+  workDir,
   isTrustedSender,
 }: Context): void {
   function handle(
@@ -28,22 +34,25 @@ export function registerIpcHandlers({
     });
   }
 
-  handle('attempt:save', (_event, payload) => {
-    recordAttempt(db, AttemptInput.parse(payload));
-  });
-  handle('summary:get', () => getSummary(db));
-  handle('today:get', () => getToday(db));
-  handle('session:get', () => buildSession(db));
   let unseen: ImportReport = { imported: [], rejected: [] };
+  let generating = false;
 
-  handle('inbox:import', () => {
+  function importAndRemember(): ImportReport {
     const report = importInbox(db, dirs);
     unseen = {
       imported: [...unseen.imported, ...report.imported],
       rejected: [...unseen.rejected, ...report.rejected],
     };
     return unseen;
+  }
+
+  handle('attempt:save', (_event, payload) => {
+    recordAttempt(db, AttemptInput.parse(payload));
   });
+  handle('summary:get', () => getSummary(db));
+  handle('today:get', () => getToday(db));
+  handle('session:get', () => buildSession(db));
+  handle('inbox:import', () => importAndRemember());
 
   handle('inbox:dismiss', () => {
     unseen = { imported: [], rejected: [] };
@@ -57,5 +66,34 @@ export function registerIpcHandlers({
 
   handle('brief:copy', () => {
     clipboard.writeText(briefPrompt(buildBrief(db)));
+  });
+
+  handle('claude:status', () => ({ found: findClaude() !== null }));
+
+  handle('claude:generate', async () => {
+    if (generating) throw new Error('A test is already being generated.');
+    const claude = findClaude();
+    if (!claude) throw new Error('The Claude CLI was not found.');
+
+    generating = true;
+    try {
+      fs.mkdirSync(workDir, { recursive: true });
+      const reply = await runClaude(
+        claude,
+        briefPrompt(buildBrief(db)),
+        workDir,
+      );
+      ensureInboxDirs(dirs);
+      const now = new Date();
+      const time = now.toTimeString().slice(0, 8).replace(/:/g, '');
+      const file = path.join(
+        dirs.inbox,
+        `claude-${localDay(now)}-${time}.json`,
+      );
+      fs.writeFileSync(file, extractJson(reply), 'utf8');
+      return importAndRemember();
+    } finally {
+      generating = false;
+    }
   });
 }

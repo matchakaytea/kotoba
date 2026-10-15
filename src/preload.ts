@@ -10,6 +10,8 @@ const api: KotobaApi = {
   dismissImportReport: () => ipcRenderer.invoke('inbox:dismiss'),
   openInbox: () => ipcRenderer.invoke('inbox:open'),
   copyBrief: () => ipcRenderer.invoke('brief:copy'),
+  claudeStatus: () => ipcRenderer.invoke('claude:status'),
+  generateTest: () => ipcRenderer.invoke('claude:generate'),
 };
 
 contextBridge.exposeInMainWorld('kotoba', api);
