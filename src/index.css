@@ -247,3 +247,22 @@ button:disabled {
   padding: 0.25rem 0.5rem;
   color: var(--muted);
 }
+
+.test-header {
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.test-header span:last-child {
+  margin-left: auto;
+}
+
+.back {
+  border: none;
+  padding: 0;
+  color: var(--muted);
+}
+
+.back:hover {
+  color: var(--text);
+}

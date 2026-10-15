@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Session } from '../shared/api';
 import type { GradeResult } from '../shared/grading';
 import type { Question } from '../shared/test-schema';
@@ -18,6 +18,14 @@ export function TestRunner({ session, onExit }: Props) {
   const [result, setResult] = useState<GradeResult | null>(null);
   const [correctCount, setCorrectCount] = useState(0);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape' && !event.isComposing) onExit();
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [onExit]);
 
   function handleAnswer(graded: GradeResult, answer: string) {
     setResult(graded);
@@ -59,6 +67,9 @@ export function TestRunner({ session, onExit }: Props) {
   return (
     <main>
       <header className="test-header">
+        <button className="back" title="Back to Today (Esc)" onClick={onExit}>
+          ← Today
+        </button>
         <span>{session.title}</span>
         <span>
           {index + 1} / {questions.length}
