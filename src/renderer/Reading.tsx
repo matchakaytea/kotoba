@@ -1,6 +1,7 @@
 import { useEffect, useRef, type FormEvent } from 'react';
 import { bind, toHiragana, unbind } from 'wanakana';
 import { gradeReading, type GradeResult } from '../shared/grading';
+import { useI18n } from './i18n/i18n';
 import type { ReadingQuestion } from '../shared/test-schema';
 
 type Props = {
@@ -10,6 +11,7 @@ type Props = {
 };
 
 export function Reading({ question, answered, onAnswer }: Props) {
+  const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -30,13 +32,19 @@ export function Reading({ question, answered, onAnswer }: Props) {
 
   return (
     <section>
-      <p className="prompt-kanji">{question.prompt}</p>
-      {question.context && <p className="context">{question.context}</p>}
+      <p className="prompt-kanji" lang="ja">
+        {question.prompt}
+      </p>
+      {question.context && (
+        <p className="context" lang="ja">
+          {question.context}
+        </p>
+      )}
       <form onSubmit={submit}>
         <input
           ref={inputRef}
           className="answer-input"
-          placeholder="Type the reading (romaji is fine)"
+          placeholder={t('review.readingPlaceholder')}
           disabled={answered}
           lang="ja"
           autoComplete="off"

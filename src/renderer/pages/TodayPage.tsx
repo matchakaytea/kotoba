@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { DueTarget, ImportReport, Today } from '../../shared/api';
 import { formatDay } from '../format';
+import { useI18n } from '../i18n/i18n';
+import type { MessageKey } from '../i18n/messages';
 import { ImportNotice } from '../ImportNotice';
 
 export type Generation = {
@@ -16,7 +18,10 @@ type Props = {
   onStart: () => void;
 };
 
+const SKILLS = ['reading', 'meaning', 'usage', 'grammar', 'production'];
+
 export function TodayPage({ generation, onStart }: Props) {
+  const { t, locale } = useI18n();
   const [today, setToday] = useState<Today | null>(null);
   const [report, setReport] = useState<ImportReport | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -54,32 +59,52 @@ export function TodayPage({ generation, onStart }: Props) {
       ? Math.round((summary.correct / summary.attempts) * 100)
       : null;
 
+  let subtitle = t('today.getStarted');
+  if (due.length > 0) {
+    subtitle = t('today.questionsReady', { count: questionsReady });
+    if (missing > 0) {
+      subtitle += ` · ${t('today.needQuestions', { count: missing })}`;
+    }
+  } else if (nextDueDay) {
+    subtitle = t('today.nextReview', {
+      date: formatDay(nextDueDay, locale, {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric',
+      }),
+    });
+  }
+
+  const footer = [
+    t('today.answers', { count: summary.attempts }),
+    accuracy !== null ? t('today.accuracy', { percent: accuracy }) : null,
+    t('today.targets', { count: summary.targets }),
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
   return (
     <div className="page">
       <header className="page-header">
         <div>
           <p className="page-kicker">
-            {formatDay(today.today, {
+            {formatDay(today.today, locale, {
               weekday: 'long',
               month: 'long',
               day: 'numeric',
             })}
           </p>
           <h1>
-            {due.length > 0 ? `${due.length} due today` : 'Nothing due today'}
-          </h1>
-          <p className="page-sub">
             {due.length > 0
-              ? `${questionsReady} questions ready${missing > 0 ? ` · ${missing} need new questions` : ''}`
-              : nextDueDay
-                ? `Next review: ${formatDay(nextDueDay, { weekday: 'long', month: 'short', day: 'numeric' })}`
-                : 'Generate a test to get started.'}
-          </p>
+              ? t('today.dueCount', { count: due.length })
+              : t('today.nothingDue')}
+          </h1>
+          <p className="page-sub">{subtitle}</p>
         </div>
         <div className="header-actions">
           {generation.available && (
             <button disabled={generation.running} onClick={generation.run}>
-              {generation.running ? 'Generating…' : 'Generate test'}
+              {generation.running ? t('today.generating') : t('today.generate')}
             </button>
           )}
           <button
@@ -88,16 +113,13 @@ export function TodayPage({ generation, onStart }: Props) {
             disabled={questionsReady === 0}
             onClick={onStart}
           >
-            Start review
+            {t('today.start')}
           </button>
         </div>
       </header>
 
       {generation.running && (
-        <p className="notice notice-info">
-          Claude is writing a test from your due words and mistakes. This
-          usually takes a minute or two. You can keep using the app.
-        </p>
+        <p className="notice notice-info">{t('today.generatingNotice')}</p>
       )}
       {generation.error && <p className="notice error">{generation.error}</p>}
       {report && <ImportNotice report={report} onDismiss={dismissReport} />}
@@ -114,24 +136,25 @@ export function TodayPage({ generation, onStart }: Props) {
         </ul>
       )}
 
-      <footer className="page-footer">
-        {summary.attempts} answers
-        {accuracy !== null && ` · ${accuracy}% correct`} · {summary.targets}{' '}
-        words and skills
-      </footer>
+      <footer className="page-footer">{footer}</footer>
     </div>
   );
 }
 
 function DueRow({ target, today }: { target: DueTarget; today: string }) {
-  let status = 'new';
+  const { t, locale } = useI18n();
+  let status = t('status.new');
   let tone = 'muted';
   if (target.dueDay && target.dueDay < today) {
-    status = `overdue since ${formatDay(target.dueDay)}`;
+    status = t('status.overdue', { date: formatDay(target.dueDay, locale) });
     tone = 'warning';
   } else if (target.dueDay) {
-    status = 'due';
+    status = t('status.due');
   }
+
+  const skill = SKILLS.includes(target.skill)
+    ? t(`skill.${target.skill}` as MessageKey)
+    : target.skill;
 
   return (
     <li className="row">
@@ -143,9 +166,9 @@ function DueRow({ target, today }: { target: DueTarget; today: string }) {
           {target.reading}
         </span>
       )}
-      <span className="tag">{target.skill}</span>
+      <span className="tag">{skill}</span>
       {!target.hasQuestion && (
-        <span className="tag tag-warning">no question</span>
+        <span className="tag tag-warning">{t('status.noQuestion')}</span>
       )}
       <span className={`row-status ${tone}`}>{status}</span>
     </li>

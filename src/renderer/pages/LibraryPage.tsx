@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import type { LibraryTest } from '../../shared/api';
 import { cleanError, formatTimestamp } from '../format';
+import { useI18n } from '../i18n/i18n';
 
 export function LibraryPage() {
+  const { t, locale } = useI18n();
   const [tests, setTests] = useState<LibraryTest[] | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -30,10 +32,9 @@ export function LibraryPage() {
     <div className="page">
       <header className="page-header">
         <div>
-          <h1>Library</h1>
+          <h1>{t('library.title')}</h1>
           <p className="page-sub">
-            {tests.length} {tests.length === 1 ? 'test' : 'tests'} · {total}{' '}
-            questions. Reviews draw from all of them.
+            {t('library.sub', { count: tests.length, questions: total })}
           </p>
         </div>
       </header>
@@ -41,17 +42,15 @@ export function LibraryPage() {
       {error && <p className="notice error">{error}</p>}
 
       {tests.length === 0 ? (
-        <p className="empty">
-          No tests yet. Generate one on Today, or add a file in Inbox.
-        </p>
+        <p className="empty">{t('library.empty')}</p>
       ) : (
         <table className="table">
           <thead>
             <tr>
-              <th>Title</th>
-              <th className="num">Questions</th>
-              <th>Imported</th>
-              <th className="actions-cell" aria-label="Actions" />
+              <th>{t('library.testTitle')}</th>
+              <th className="num">{t('library.questions')}</th>
+              <th>{t('library.imported')}</th>
+              <th className="actions-cell" />
             </tr>
           </thead>
           <tbody>
@@ -63,23 +62,23 @@ export function LibraryPage() {
                 </td>
                 <td className="num">{test.questions}</td>
                 <td className="cell-muted">
-                  {formatTimestamp(test.importedAt)}
+                  {formatTimestamp(test.importedAt, locale)}
                 </td>
                 <td className="actions-cell">
                   {confirming === test.id ? (
                     <span className="confirm">
                       <span className="confirm-text">
-                        Delete {test.questions} questions?
+                        {t('library.confirm', { count: test.questions })}
                       </span>
                       <button
                         className="danger"
                         autoFocus
                         onClick={() => remove(test.id)}
                       >
-                        Delete
+                        {t('library.delete')}
                       </button>
                       <button onClick={() => setConfirming(null)}>
-                        Cancel
+                        {t('library.cancel')}
                       </button>
                     </span>
                   ) : (
@@ -87,7 +86,7 @@ export function LibraryPage() {
                       className="subtle"
                       onClick={() => setConfirming(test.id)}
                     >
-                      Delete
+                      {t('library.delete')}
                     </button>
                   )}
                 </td>
@@ -97,12 +96,7 @@ export function LibraryPage() {
         </table>
       )}
 
-      {tests.length > 0 && (
-        <p className="page-footer">
-          Deleting a test removes its questions. Words you've already practised
-          keep their progress, and come back in a future generated test.
-        </p>
-      )}
+      {tests.length > 0 && <p className="page-footer">{t('library.footer')}</p>}
     </div>
   );
 }

@@ -65,6 +65,7 @@ describe('buildBrief with saved settings', () => {
     const { saveSettings } = await import('./database');
     const db = databaseWithMistake();
     saveSettings(db, {
+      language: 'en',
       level: 'JLPT N1',
       topics: ['finance'],
       questionCount: 25,
@@ -78,5 +79,23 @@ describe('buildBrief with saved settings', () => {
     expect(briefPrompt(brief)).toContain(
       'learner JLPT N1, on these topics: finance',
     );
+  });
+});
+
+describe('briefPrompt language', () => {
+  it('asks for prompts in English by default', () => {
+    const prompt = briefPrompt(buildBrief(databaseWithMistake(), tuesday));
+    expect(prompt).toContain('Write the question prompts in English');
+  });
+
+  it('asks for prompts in the chosen app language', async () => {
+    const { saveSettings, getSettings } = await import('./database');
+    const db = databaseWithMistake();
+    saveSettings(db, { ...getSettings(db), language: 'zh-Hant' });
+    const prompt = briefPrompt(buildBrief(db, tuesday));
+    expect(prompt).toContain(
+      'Write the question prompts in Traditional Chinese',
+    );
+    expect(prompt).toContain('Write "title" in Traditional Chinese');
   });
 });

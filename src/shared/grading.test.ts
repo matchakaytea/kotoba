@@ -67,25 +67,10 @@ describe('gradeReading', () => {
   });
 
   it.each([
-    [
-      'a missing small っ',
-      'ふっきゅう',
-      'ふきゅう',
-      'Check the small っ (double consonant).',
-    ],
-    [
-      'a large よ instead of ょ',
-      'しょうがい',
-      'しようがい',
-      'Check small ゃ / ゅ / ょ.',
-    ],
-    [
-      'a missing dakuten',
-      'しょうがい',
-      'しょうかい',
-      'Check the voiced marks ゛ and ゜.',
-    ],
-    ['a short vowel', 'ふっきゅう', 'ふっきゅ', 'Check the vowel length.'],
+    ['a missing small っ', 'ふっきゅう', 'ふきゅう', 'small-tsu'],
+    ['a large よ instead of ょ', 'しょうがい', 'しようがい', 'small-ya'],
+    ['a missing dakuten', 'しょうがい', 'しょうかい', 'voiced-marks'],
+    ['a short vowel', 'ふっきゅう', 'ふっきゅ', 'vowel-length'],
   ])('rejects %s with a hint', (_name, expected, answer, hint) => {
     const result = gradeReading(reading(expected), answer);
     expect(result.correct).toBe(false);

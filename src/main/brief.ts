@@ -1,5 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite';
 import { z } from 'zod';
+import { LANGUAGES } from '../shared/api';
 import { LangTest } from '../shared/test-schema';
 import { getBriefData, getSettings } from './database';
 import { localDay } from './scheduler';
@@ -18,7 +19,9 @@ export function buildBrief(db: DatabaseSync, now = new Date()) {
     learner: {
       level: settings.level,
       topics: settings.topics,
-      prompt_language: 'en',
+      prompt_language:
+        LANGUAGES.find((language) => language.code === settings.language)
+          ?.english ?? 'English',
     },
     question_count: settings.questionCount,
     supported_templates: ['reading', 'multiple_choice'],
@@ -49,7 +52,8 @@ Rules:
 - Fill the remaining questions with new, useful words for a learner ${brief.learner.level}, on these topics: ${brief.learner.topics.join(', ')}.
 - Every question lists its targets: { expression, reading, skill }. Use skill "reading" for reading questions and "meaning" for multiple-choice meaning questions.
 - reading: "prompt" is the word in kanji, "answers" lists every valid reading in hiragana only. Add a "context" sentence when the reading depends on it.
-- multiple_choice: 4 options, exactly one correct, no duplicates, plausible distractors. Write prompts in English.
+- multiple_choice: 4 options, exactly one correct, no duplicates, plausible distractors. Write the question prompts in ${brief.learner.prompt_language}; options stay in Japanese.
+- Write "title" in ${brief.learner.prompt_language}.
 - Use "test_id": "claude-${brief.date}-" followed by 4 random letters, and a short descriptive "title".
 - Double-check every reading. A wrong answer key teaches the wrong thing.
 

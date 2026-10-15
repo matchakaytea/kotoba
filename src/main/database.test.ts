@@ -482,6 +482,7 @@ describe('settings', () => {
 
   it('saves and reloads settings', () => {
     const settings = {
+      language: 'ko' as const,
       level: 'JLPT N1',
       topics: ['finance'],
       questionCount: 25,
@@ -492,7 +493,12 @@ describe('settings', () => {
 
   it('rejects invalid settings', () => {
     expect(() =>
-      saveSettings(db, { level: '', topics: [], questionCount: 2 }),
+      saveSettings(db, {
+        language: 'en',
+        level: '',
+        topics: [],
+        questionCount: 2,
+      }),
     ).toThrow();
     expect(getSettings(db)).toEqual(DEFAULT_SETTINGS);
   });
@@ -590,5 +596,23 @@ describe('deleteTest', () => {
     });
     deleteTest(db, 'missing');
     expect(count('questions')).toBe(1);
+  });
+});
+
+describe('settings saved before languages existed', () => {
+  it('keeps the old values and defaults the language to English', () => {
+    db.prepare("INSERT INTO settings (key, value) VALUES ('learner', ?)").run(
+      JSON.stringify({
+        level: 'JLPT N3',
+        topics: ['travel'],
+        questionCount: 20,
+      }),
+    );
+    expect(getSettings(db)).toEqual({
+      language: 'en',
+      level: 'JLPT N3',
+      topics: ['travel'],
+      questionCount: 20,
+    });
   });
 });

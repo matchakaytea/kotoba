@@ -43,6 +43,7 @@ export function MultipleChoice({ question, answered, onAnswer }: Props) {
           <button
             key={option}
             className={optionClass(index)}
+            lang="ja"
             disabled={answered}
             onClick={() => choose(index)}
           >

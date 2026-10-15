@@ -1,47 +1,66 @@
-import { useEffect, useState, type FormEvent } from 'react';
-import { Settings } from '../../shared/api';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { LANGUAGES, Settings, type Language } from '../../shared/api';
 import { cleanError } from '../format';
+import { useI18n } from '../i18n/i18n';
 
-export function SettingsPage() {
+type Status = { ok: true } | { ok: false; error: string | null };
+
+type Props = {
+  onLanguageChange: (language: Language) => void;
+};
+
+export function SettingsPage({ onLanguageChange }: Props) {
+  const { t } = useI18n();
+  const [language, setLanguage] = useState<Language>('en');
+  const [savedLanguage, setSavedLanguage] = useState<Language>('en');
   const [level, setLevel] = useState('');
   const [topics, setTopics] = useState('');
   const [questionCount, setQuestionCount] = useState(15);
   const [loaded, setLoaded] = useState(false);
-  const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(
-    null,
-  );
+  const [status, setStatus] = useState<Status | null>(null);
+
+  const savedLanguageRef = useRef<Language>('en');
+  savedLanguageRef.current = savedLanguage;
 
   useEffect(() => {
     window.kotoba.getSettings().then((settings) => {
+      setLanguage(settings.language);
+      setSavedLanguage(settings.language);
       setLevel(settings.level);
       setTopics(settings.topics.join(', '));
       setQuestionCount(settings.questionCount);
       setLoaded(true);
     });
-  }, []);
+    return () => onLanguageChange(savedLanguageRef.current);
+  }, [onLanguageChange]);
+
+  function previewLanguage(next: Language) {
+    setLanguage(next);
+    onLanguageChange(next);
+  }
 
   async function save(event: FormEvent) {
     event.preventDefault();
     const parsed = Settings.safeParse({
+      language,
       level,
       topics: topics
-        .split(/[,、]/)
+        .split(/[,、，]/)
         .map((topic) => topic.trim())
         .filter(Boolean),
       questionCount,
     });
     if (!parsed.success) {
-      setStatus({
-        ok: false,
-        text: 'Add a level and at least one topic. Questions per test can be 5 to 40.',
-      });
+      setStatus({ ok: false, error: null });
       return;
     }
     try {
-      await window.kotoba.saveSettings(parsed.data);
-      setStatus({ ok: true, text: 'Saved. The next test will use these.' });
+      const saved = await window.kotoba.saveSettings(parsed.data);
+      setSavedLanguage(saved.language);
+      onLanguageChange(saved.language);
+      setStatus({ ok: true });
     } catch (e) {
-      setStatus({ ok: false, text: cleanError(e) });
+      setStatus({ ok: false, error: cleanError(e) });
     }
   }
 
@@ -51,38 +70,59 @@ export function SettingsPage() {
     <div className="page">
       <header className="page-header">
         <div>
-          <h1>Settings</h1>
-          <p className="page-sub">
-            What Claude should aim for when it writes your tests.
-          </p>
+          <h1>{t('settings.title')}</h1>
+          <p className="page-sub">{t('settings.sub')}</p>
         </div>
       </header>
 
       <form className="form" onSubmit={save} onChange={() => setStatus(null)}>
         <label className="field">
-          <span className="field-label">Level</span>
+          <span className="field-label">{t('settings.language')}</span>
+          <span className="select input-medium">
+            <select
+              value={language}
+              onChange={(e) => previewLanguage(e.target.value as Language)}
+            >
+              {LANGUAGES.map((option) => (
+                <option
+                  key={option.code}
+                  value={option.code}
+                  lang={option.code}
+                >
+                  {option.name}
+                </option>
+              ))}
+            </select>
+          </span>
+          <span className="field-hint">
+            {language !== savedLanguage
+              ? t('settings.languageUnsaved')
+              : t('settings.languageHint')}
+          </span>
+        </label>
+
+        <label className="field">
+          <span className="field-label">{t('settings.level')}</span>
           <input
             value={level}
             onChange={(e) => setLevel(e.target.value)}
             placeholder="around JLPT N2"
           />
-          <span className="field-hint">
-            Free text, for example “around JLPT N3” or “B1, strong reading”.
-          </span>
+          <span className="field-hint">{t('settings.levelHint')}</span>
         </label>
 
         <label className="field">
-          <span className="field-label">Topics</span>
+          <span className="field-label">{t('settings.topics')}</span>
           <input
             value={topics}
             onChange={(e) => setTopics(e.target.value)}
             placeholder="IT, workplace, travel"
           />
-          <span className="field-hint">Separate topics with commas.</span>
+          <span className="field-hint">{t('settings.topicsHint')}</span>
         </label>
 
         <label className="field">
-          <span className="field-label">Questions per test</span>
+          <span className="field-label">{t('settings.questionCount')}</span>
           <input
             type="number"
             min={5}
@@ -95,13 +135,15 @@ export function SettingsPage() {
 
         <div className="form-actions">
           <button type="submit" className="primary">
-            Save settings
+            {t('settings.save')}
           </button>
           {status && (
             <span
               className={status.ok ? 'form-status ok' : 'form-status error'}
             >
-              {status.text}
+              {status.ok
+                ? t('settings.saved')
+                : (status.error ?? t('settings.invalid'))}
             </span>
           )}
         </div>

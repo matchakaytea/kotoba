@@ -3,6 +3,7 @@ import type { Session } from '../shared/api';
 import type { GradeResult } from '../shared/grading';
 import type { Question } from '../shared/test-schema';
 import { Feedback } from './Feedback';
+import { useI18n } from './i18n/i18n';
 import { MultipleChoice } from './MultipleChoice';
 import { Reading } from './Reading';
 
@@ -12,6 +13,7 @@ type Props = {
 };
 
 export function TestRunner({ session, onExit }: Props) {
+  const { t } = useI18n();
   const items = session.items;
   const questions = items.map((item) => item.question);
   const [index, setIndex] = useState(0);
@@ -57,16 +59,17 @@ export function TestRunner({ session, onExit }: Props) {
     return (
       <div className="review">
         <div className="review-done">
-          <p className="page-kicker">{session.title}</p>
-          <h1>Done</h1>
+          <p className="page-kicker">{t('review.title')}</p>
+          <h1>{t('review.done')}</h1>
           <p className="score">
-            {correctCount} / {questions.length} correct
+            {t('review.score', {
+              correct: correctCount,
+              total: questions.length,
+            })}
           </p>
-          <p className="page-sub">
-            Wrong answers come back tomorrow. Right ones come back later.
-          </p>
+          <p className="page-sub">{t('review.doneSub')}</p>
           <button className="primary" autoFocus onClick={onExit}>
-            Back to Today
+            {t('review.backToToday')}
           </button>
         </div>
       </div>
@@ -76,8 +79,8 @@ export function TestRunner({ session, onExit }: Props) {
   return (
     <div className="review">
       <header className="review-header">
-        <button className="back" title="Back to Today (Esc)" onClick={onExit}>
-          ← Today
+        <button className="back" title={t('review.backTitle')} onClick={onExit}>
+          {t('review.back')}
         </button>
         <div
           className="progress"
@@ -102,7 +105,7 @@ export function TestRunner({ session, onExit }: Props) {
         {result && <Feedback result={result} onNext={next} />}
         {saveError && (
           <p className="notice error">
-            Could not save this answer: {saveError}
+            {t('review.saveError', { error: saveError })}
           </p>
         )}
       </div>

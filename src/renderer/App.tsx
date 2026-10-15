@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { ImportReport, Session } from '../shared/api';
+import type { ImportReport, Language, Session } from '../shared/api';
 import { cleanError } from './format';
+import { I18nProvider } from './i18n/i18n';
 import { InboxPage } from './pages/InboxPage';
 import { LibraryPage } from './pages/LibraryPage';
 import { MistakesPage } from './pages/MistakesPage';
@@ -10,6 +11,7 @@ import { Sidebar, type Page } from './Sidebar';
 import { TestRunner } from './TestRunner';
 
 export function App() {
+  const [language, setLanguage] = useState<Language | null>(null);
   const [page, setPage] = useState<Page>('today');
   const [session, setSession] = useState<Session | null>(null);
   const [claudeAvailable, setClaudeAvailable] = useState(false);
@@ -18,6 +20,10 @@ export function App() {
   const [lastReport, setLastReport] = useState<ImportReport | null>(null);
 
   useEffect(() => {
+    window.kotoba
+      .getSettings()
+      .then((settings) => setLanguage(settings.language))
+      .catch(() => setLanguage('en'));
     window.kotoba
       .claudeStatus()
       .then((status) => setClaudeAvailable(status.found));
@@ -45,31 +51,37 @@ export function App() {
     setPage('today');
   }, []);
 
-  if (session) {
-    return <TestRunner session={session} onExit={exitSession} />;
-  }
+  if (!language) return null;
 
   return (
-    <div className="shell">
-      <Sidebar current={page} onSelect={setPage} />
-      <main className="content">
-        {page === 'today' && (
-          <TodayPage
-            onStart={start}
-            generation={{
-              available: claudeAvailable,
-              running: generating,
-              error: generateError,
-              lastReport,
-              run: generate,
-            }}
-          />
-        )}
-        {page === 'mistakes' && <MistakesPage />}
-        {page === 'library' && <LibraryPage />}
-        {page === 'inbox' && <InboxPage />}
-        {page === 'settings' && <SettingsPage />}
-      </main>
-    </div>
+    <I18nProvider language={language}>
+      {session ? (
+        <TestRunner session={session} onExit={exitSession} />
+      ) : (
+        <div className="shell">
+          <Sidebar current={page} onSelect={setPage} />
+          <main className="content">
+            {page === 'today' && (
+              <TodayPage
+                onStart={start}
+                generation={{
+                  available: claudeAvailable,
+                  running: generating,
+                  error: generateError,
+                  lastReport,
+                  run: generate,
+                }}
+              />
+            )}
+            {page === 'mistakes' && <MistakesPage />}
+            {page === 'library' && <LibraryPage />}
+            {page === 'inbox' && <InboxPage />}
+            {page === 'settings' && (
+              <SettingsPage onLanguageChange={setLanguage} />
+            )}
+          </main>
+        </div>
+      )}
+    </I18nProvider>
   );
 }

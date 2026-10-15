@@ -1,0 +1,502 @@
+import type { Language } from '../../shared/api';
+
+const en = {
+  'nav.today': 'Today',
+  'nav.mistakes': 'Mistakes',
+  'nav.library': 'Library',
+  'nav.inbox': 'Inbox',
+  'nav.settings': 'Settings',
+
+  'today.dueCount': '{count} due today',
+  'today.nothingDue': 'Nothing due today',
+  'today.questionsReady': '{count} questions ready',
+  'today.needQuestions': '{count} need new questions',
+  'today.nextReview': 'Next review: {date}',
+  'today.getStarted': 'Generate a test to get started.',
+  'today.generate': 'Generate test',
+  'today.generating': 'Generating…',
+  'today.start': 'Start review',
+  'today.generatingNotice':
+    'Claude is writing a test from your due words and mistakes. This usually takes a minute or two. You can keep using the app.',
+  'today.answers': '{count} answers',
+  'today.accuracy': '{percent}% correct',
+  'today.targets': '{count} words and skills',
+
+  'status.new': 'new',
+  'status.due': 'due',
+  'status.overdue': 'overdue since {date}',
+  'status.noQuestion': 'no question',
+
+  'skill.reading': 'reading',
+  'skill.meaning': 'meaning',
+  'skill.usage': 'usage',
+  'skill.grammar': 'grammar',
+  'skill.production': 'production',
+
+  'import.imported': 'Imported “{title}” ({count} questions)',
+  'import.rejected': '{file} was rejected ({count} problems)',
+  'import.dismiss': 'Dismiss',
+
+  'mistakes.title': 'Mistakes',
+  'mistakes.sub':
+    "Your recent wrong answers. Each word comes back in a later review, and Claude's next test focuses on them.",
+  'mistakes.empty': 'No mistakes yet. Wrong answers show up here.',
+  'mistakes.question': 'Question',
+  'mistakes.yourAnswer': 'Your answer',
+  'mistakes.correctAnswer': 'Correct answer',
+  'mistakes.when': 'When',
+
+  'library.title': 'Library',
+  'library.sub':
+    '{count} tests · {questions} questions. Reviews draw from all of them.',
+  'library.empty':
+    'No tests yet. Generate one on Today, or add a file in Inbox.',
+  'library.testTitle': 'Title',
+  'library.questions': 'Questions',
+  'library.imported': 'Imported',
+  'library.delete': 'Delete',
+  'library.confirm': 'Delete {count} questions?',
+  'library.cancel': 'Cancel',
+  'library.footer':
+    "Deleting a test removes its questions. Words you've already practised keep their progress, and come back in a future generated test.",
+
+  'inbox.title': 'Inbox',
+  'inbox.sub':
+    'Add tests by hand: from a chat with Claude, written yourself, or shared by someone else. Any valid test file in the inbox folder is imported.',
+  'inbox.step1.title': 'Copy the brief',
+  'inbox.step1.body':
+    'Your due words, recent mistakes, level and topics, plus the rules for the test format.',
+  'inbox.step1.button': 'Copy brief',
+  'inbox.step2.title': 'Save the reply in the inbox',
+  'inbox.step2.body':
+    'Paste the brief into Claude, then save its reply as a .json file in the inbox folder.',
+  'inbox.step2.button': 'Open inbox folder',
+  'inbox.step3.title': 'Import it',
+  'inbox.step3.body':
+    'Files are also checked every time you open Today. Invalid files move to the rejected folder, with the reasons next to them.',
+  'inbox.step3.button': 'Check inbox',
+  'inbox.copied': 'Brief copied to the clipboard.',
+  'inbox.noNew': 'No new files in the inbox.',
+
+  'settings.title': 'Settings',
+  'settings.sub':
+    'Your language, and what Claude should aim for when it writes your tests.',
+  'settings.language': 'Language',
+  'settings.languageHint':
+    'Used for the app and for the questions in newly generated tests.',
+  'settings.languageUnsaved':
+    'Previewing. Save settings to keep this language.',
+  'settings.level': 'Level',
+  'settings.levelHint':
+    'Free text, for example “around JLPT N3” or “B1, strong reading”.',
+  'settings.topics': 'Topics',
+  'settings.topicsHint': 'Separate topics with commas.',
+  'settings.questionCount': 'Questions per test',
+  'settings.save': 'Save settings',
+  'settings.saved': 'Saved. The next test will use these.',
+  'settings.invalid':
+    'Add a level and at least one topic. Questions per test can be 5 to 40.',
+
+  'review.back': '← Today',
+  'review.backTitle': 'Back to Today (Esc)',
+  'review.title': "Today's review",
+  'review.done': 'Done',
+  'review.score': '{correct} / {total} correct',
+  'review.doneSub':
+    'Wrong answers come back tomorrow. Right ones come back later.',
+  'review.backToToday': 'Back to Today',
+  'review.saveError': 'Could not save this answer: {error}',
+  'review.readingPlaceholder': 'Type the reading (romaji is fine)',
+
+  'feedback.correct': '✓ Correct',
+  'feedback.answer': '✗ Answer:',
+  'feedback.next': 'Next →',
+
+  'hint.small-tsu': 'Check the small っ (double consonant).',
+  'hint.small-ya': 'Check small ゃ / ゅ / ょ.',
+  'hint.voiced-marks': 'Check the voiced marks ゛ and ゜.',
+  'hint.vowel-length': 'Check the vowel length.',
+};
+
+export type MessageKey = keyof typeof en;
+type Messages = Record<MessageKey, string>;
+
+const enOne: Partial<Messages> = {
+  'today.questionsReady': '1 question ready',
+  'today.needQuestions': '1 needs a new question',
+  'today.answers': '1 answer',
+  'today.targets': '1 word or skill',
+  'import.imported': 'Imported “{title}” (1 question)',
+  'import.rejected': '{file} was rejected (1 problem)',
+  'library.sub':
+    '1 test · {questions} questions. Reviews draw from all of them.',
+  'library.confirm': 'Delete 1 question?',
+};
+
+const zhHans: Messages = {
+  'nav.today': '今天',
+  'nav.mistakes': '错题',
+  'nav.library': '题库',
+  'nav.inbox': '收件箱',
+  'nav.settings': '设置',
+
+  'today.dueCount': '今天有 {count} 个待复习',
+  'today.nothingDue': '今天没有待复习的内容',
+  'today.questionsReady': '{count} 道题已就绪',
+  'today.needQuestions': '{count} 个需要新题目',
+  'today.nextReview': '下次复习：{date}',
+  'today.getStarted': '生成一套测试即可开始。',
+  'today.generate': '生成测试',
+  'today.generating': '生成中…',
+  'today.start': '开始复习',
+  'today.generatingNotice':
+    'Claude 正在根据你待复习的词和错题编写测试，通常需要一两分钟。期间你可以继续使用应用。',
+  'today.answers': '{count} 次作答',
+  'today.accuracy': '正确率 {percent}%',
+  'today.targets': '{count} 个词与技能',
+
+  'status.new': '新',
+  'status.due': '待复习',
+  'status.overdue': '自 {date} 起逾期',
+  'status.noQuestion': '暂无题目',
+
+  'skill.reading': '读音',
+  'skill.meaning': '词义',
+  'skill.usage': '用法',
+  'skill.grammar': '语法',
+  'skill.production': '输出',
+
+  'import.imported': '已导入“{title}”（{count} 道题）',
+  'import.rejected': '{file} 未通过检查（{count} 个问题）',
+  'import.dismiss': '关闭',
+
+  'mistakes.title': '错题',
+  'mistakes.sub':
+    '你最近答错的题目。这些词会在之后的复习中再次出现，Claude 生成下一套测试时也会重点关注。',
+  'mistakes.empty': '还没有错题。答错的题目会显示在这里。',
+  'mistakes.question': '题目',
+  'mistakes.yourAnswer': '你的答案',
+  'mistakes.correctAnswer': '正确答案',
+  'mistakes.when': '时间',
+
+  'library.title': '题库',
+  'library.sub': '{count} 套测试 · {questions} 道题。复习会从所有测试中抽题。',
+  'library.empty': '还没有测试。可以在“今天”页生成，或在“收件箱”中添加文件。',
+  'library.testTitle': '标题',
+  'library.questions': '题数',
+  'library.imported': '导入时间',
+  'library.delete': '删除',
+  'library.confirm': '删除 {count} 道题？',
+  'library.cancel': '取消',
+  'library.footer':
+    '删除测试会移除其中的题目。已练习过的词会保留学习进度，并在之后生成的测试中再次出现。',
+
+  'inbox.title': '收件箱',
+  'inbox.sub':
+    '手动添加测试：来自与 Claude 的对话、自己编写，或他人分享。收件箱文件夹中任何有效的测试文件都会被导入。',
+  'inbox.step1.title': '复制简报',
+  'inbox.step1.body':
+    '包含你待复习的词、最近的错题、水平和主题，以及测试格式的规则。',
+  'inbox.step1.button': '复制简报',
+  'inbox.step2.title': '将回复保存到收件箱',
+  'inbox.step2.body':
+    '把简报粘贴给 Claude，然后将它的回复保存为 .json 文件，放入收件箱文件夹。',
+  'inbox.step2.button': '打开收件箱文件夹',
+  'inbox.step3.title': '导入',
+  'inbox.step3.body':
+    '每次打开“今天”页时也会自动检查。无效的文件会被移到 rejected 文件夹，并附上原因。',
+  'inbox.step3.button': '检查收件箱',
+  'inbox.copied': '简报已复制到剪贴板。',
+  'inbox.noNew': '收件箱中没有新文件。',
+
+  'settings.title': '设置',
+  'settings.sub': '你的语言，以及 Claude 编写测试时的目标。',
+  'settings.language': '语言',
+  'settings.languageHint': '应用界面和新生成测试中的题目都会使用这种语言。',
+  'settings.languageUnsaved': '正在预览。保存设置后才会保留这种语言。',
+  'settings.level': '水平',
+  'settings.levelHint': '自由填写，例如“大约 JLPT N3”或“B1，阅读较强”。',
+  'settings.topics': '主题',
+  'settings.topicsHint': '用逗号分隔多个主题。',
+  'settings.questionCount': '每套测试的题数',
+  'settings.save': '保存设置',
+  'settings.saved': '已保存。下一套测试将使用这些设置。',
+  'settings.invalid': '请填写水平和至少一个主题。每套测试的题数为 5 到 40。',
+
+  'review.back': '← 今天',
+  'review.backTitle': '返回今天（Esc）',
+  'review.title': '今日复习',
+  'review.done': '完成',
+  'review.score': '答对 {correct} / {total}',
+  'review.doneSub': '答错的题明天会再次出现，答对的会在之后再出现。',
+  'review.backToToday': '返回今天',
+  'review.saveError': '无法保存这次作答：{error}',
+  'review.readingPlaceholder': '输入读音（可以用罗马字）',
+
+  'feedback.correct': '✓ 正确',
+  'feedback.answer': '✗ 答案：',
+  'feedback.next': '下一题 →',
+
+  'hint.small-tsu': '注意促音“っ”。',
+  'hint.small-ya': '注意小写的“ゃ / ゅ / ょ”。',
+  'hint.voiced-marks': '注意浊音符号“゛”和“゜”。',
+  'hint.vowel-length': '注意长音。',
+};
+
+const zhHant: Messages = {
+  'nav.today': '今天',
+  'nav.mistakes': '錯題',
+  'nav.library': '題庫',
+  'nav.inbox': '收件匣',
+  'nav.settings': '設定',
+
+  'today.dueCount': '今天有 {count} 個待複習',
+  'today.nothingDue': '今天沒有待複習的內容',
+  'today.questionsReady': '{count} 題已就緒',
+  'today.needQuestions': '{count} 個需要新題目',
+  'today.nextReview': '下次複習：{date}',
+  'today.getStarted': '產生一份測驗即可開始。',
+  'today.generate': '產生測驗',
+  'today.generating': '產生中…',
+  'today.start': '開始複習',
+  'today.generatingNotice':
+    'Claude 正在根據你待複習的單字和錯題編寫測驗，通常需要一兩分鐘。期間你可以繼續使用應用程式。',
+  'today.answers': '{count} 次作答',
+  'today.accuracy': '正確率 {percent}%',
+  'today.targets': '{count} 個單字與技能',
+
+  'status.new': '新',
+  'status.due': '待複習',
+  'status.overdue': '自 {date} 起逾期',
+  'status.noQuestion': '尚無題目',
+
+  'skill.reading': '讀音',
+  'skill.meaning': '詞義',
+  'skill.usage': '用法',
+  'skill.grammar': '文法',
+  'skill.production': '輸出',
+
+  'import.imported': '已匯入「{title}」（{count} 題）',
+  'import.rejected': '{file} 未通過檢查（{count} 個問題）',
+  'import.dismiss': '關閉',
+
+  'mistakes.title': '錯題',
+  'mistakes.sub':
+    '你最近答錯的題目。這些單字會在之後的複習中再次出現，Claude 產生下一份測驗時也會特別加強。',
+  'mistakes.empty': '還沒有錯題。答錯的題目會顯示在這裡。',
+  'mistakes.question': '題目',
+  'mistakes.yourAnswer': '你的答案',
+  'mistakes.correctAnswer': '正確答案',
+  'mistakes.when': '時間',
+
+  'library.title': '題庫',
+  'library.sub': '{count} 份測驗 · {questions} 題。複習會從所有測驗中出題。',
+  'library.empty':
+    '還沒有測驗。可以在「今天」頁產生，或在「收件匣」中加入檔案。',
+  'library.testTitle': '標題',
+  'library.questions': '題數',
+  'library.imported': '匯入時間',
+  'library.delete': '刪除',
+  'library.confirm': '刪除 {count} 題？',
+  'library.cancel': '取消',
+  'library.footer':
+    '刪除測驗會移除其中的題目。已練習過的單字會保留學習進度，並在之後產生的測驗中再次出現。',
+
+  'inbox.title': '收件匣',
+  'inbox.sub':
+    '手動加入測驗：來自與 Claude 的對話、自己編寫，或他人分享。收件匣資料夾中任何有效的測驗檔案都會被匯入。',
+  'inbox.step1.title': '複製簡報',
+  'inbox.step1.body':
+    '包含你待複習的單字、最近的錯題、程度和主題，以及測驗格式的規則。',
+  'inbox.step1.button': '複製簡報',
+  'inbox.step2.title': '將回覆儲存到收件匣',
+  'inbox.step2.body':
+    '把簡報貼給 Claude，然後將它的回覆存成 .json 檔案，放進收件匣資料夾。',
+  'inbox.step2.button': '開啟收件匣資料夾',
+  'inbox.step3.title': '匯入',
+  'inbox.step3.body':
+    '每次開啟「今天」頁時也會自動檢查。無效的檔案會移到 rejected 資料夾，並附上原因。',
+  'inbox.step3.button': '檢查收件匣',
+  'inbox.copied': '簡報已複製到剪貼簿。',
+  'inbox.noNew': '收件匣中沒有新檔案。',
+
+  'settings.title': '設定',
+  'settings.sub': '你的語言，以及 Claude 編寫測驗時的目標。',
+  'settings.language': '語言',
+  'settings.languageHint': '應用程式介面和新產生測驗中的題目都會使用這個語言。',
+  'settings.languageUnsaved': '正在預覽。儲存設定後才會保留這個語言。',
+  'settings.level': '程度',
+  'settings.levelHint': '自由填寫，例如「大約 JLPT N3」或「B1，閱讀較強」。',
+  'settings.topics': '主題',
+  'settings.topicsHint': '用逗號分隔多個主題。',
+  'settings.questionCount': '每份測驗的題數',
+  'settings.save': '儲存設定',
+  'settings.saved': '已儲存。下一份測驗將使用這些設定。',
+  'settings.invalid': '請填寫程度和至少一個主題。每份測驗的題數為 5 到 40。',
+
+  'review.back': '← 今天',
+  'review.backTitle': '返回今天（Esc）',
+  'review.title': '今日複習',
+  'review.done': '完成',
+  'review.score': '答對 {correct} / {total}',
+  'review.doneSub': '答錯的題目明天會再出現，答對的會在之後再出現。',
+  'review.backToToday': '返回今天',
+  'review.saveError': '無法儲存這次作答：{error}',
+  'review.readingPlaceholder': '輸入讀音（可以用羅馬拼音）',
+
+  'feedback.correct': '✓ 正確',
+  'feedback.answer': '✗ 答案：',
+  'feedback.next': '下一題 →',
+
+  'hint.small-tsu': '注意促音「っ」。',
+  'hint.small-ya': '注意小寫的「ゃ / ゅ / ょ」。',
+  'hint.voiced-marks': '注意濁音符號「゛」和「゜」。',
+  'hint.vowel-length': '注意長音。',
+};
+
+const ko: Messages = {
+  'nav.today': '오늘',
+  'nav.mistakes': '오답',
+  'nav.library': '문제집',
+  'nav.inbox': '수신함',
+  'nav.settings': '설정',
+
+  'today.dueCount': '오늘 복습할 항목 {count}개',
+  'today.nothingDue': '오늘은 복습할 항목이 없습니다',
+  'today.questionsReady': '문제 {count}개 준비됨',
+  'today.needQuestions': '{count}개는 새 문제가 필요함',
+  'today.nextReview': '다음 복습: {date}',
+  'today.getStarted': '테스트를 생성해서 시작해 보세요.',
+  'today.generate': '테스트 생성',
+  'today.generating': '생성 중…',
+  'today.start': '복습 시작',
+  'today.generatingNotice':
+    'Claude가 복습할 단어와 틀린 문제를 바탕으로 테스트를 만들고 있습니다. 보통 1~2분 정도 걸리며, 그동안 앱을 계속 사용할 수 있습니다.',
+  'today.answers': '답변 {count}개',
+  'today.accuracy': '정답률 {percent}%',
+  'today.targets': '단어·기술 {count}개',
+
+  'status.new': '새 항목',
+  'status.due': '복습 예정',
+  'status.overdue': '{date}부터 밀림',
+  'status.noQuestion': '문제 없음',
+
+  'skill.reading': '읽기',
+  'skill.meaning': '뜻',
+  'skill.usage': '용법',
+  'skill.grammar': '문법',
+  'skill.production': '산출',
+
+  'import.imported': '“{title}” 가져옴 (문제 {count}개)',
+  'import.rejected': '{file} 파일이 거부됨 (문제점 {count}개)',
+  'import.dismiss': '닫기',
+
+  'mistakes.title': '오답',
+  'mistakes.sub':
+    '최근에 틀린 답입니다. 이 단어들은 이후 복습에서 다시 나오고, Claude의 다음 테스트에서도 집중적으로 다룹니다.',
+  'mistakes.empty': '아직 틀린 문제가 없습니다. 틀린 답은 여기에 표시됩니다.',
+  'mistakes.question': '문제',
+  'mistakes.yourAnswer': '내 답',
+  'mistakes.correctAnswer': '정답',
+  'mistakes.when': '시간',
+
+  'library.title': '문제집',
+  'library.sub':
+    '테스트 {count}개 · 문제 {questions}개. 복습은 모든 테스트에서 출제됩니다.',
+  'library.empty':
+    '아직 테스트가 없습니다. 오늘 페이지에서 생성하거나 수신함에 파일을 추가하세요.',
+  'library.testTitle': '제목',
+  'library.questions': '문제 수',
+  'library.imported': '가져온 날짜',
+  'library.delete': '삭제',
+  'library.confirm': '문제 {count}개를 삭제할까요?',
+  'library.cancel': '취소',
+  'library.footer':
+    '테스트를 삭제하면 그 안의 문제가 삭제됩니다. 이미 연습한 단어는 학습 기록이 유지되며, 이후 생성되는 테스트에 다시 나옵니다.',
+
+  'inbox.title': '수신함',
+  'inbox.sub':
+    '테스트를 직접 추가하세요. Claude와의 대화에서 가져오거나, 직접 작성하거나, 다른 사람에게 공유받을 수 있습니다. 수신함 폴더에 있는 유효한 테스트 파일은 모두 가져옵니다.',
+  'inbox.step1.title': '브리프 복사',
+  'inbox.step1.body':
+    '복습할 단어, 최근 오답, 수준과 주제, 그리고 테스트 형식 규칙이 담겨 있습니다.',
+  'inbox.step1.button': '브리프 복사',
+  'inbox.step2.title': '답변을 수신함에 저장',
+  'inbox.step2.body':
+    '브리프를 Claude에 붙여 넣은 뒤, 답변을 .json 파일로 수신함 폴더에 저장하세요.',
+  'inbox.step2.button': '수신함 폴더 열기',
+  'inbox.step3.title': '가져오기',
+  'inbox.step3.body':
+    '오늘 페이지를 열 때마다 자동으로 확인합니다. 유효하지 않은 파일은 rejected 폴더로 옮겨지고, 이유가 함께 기록됩니다.',
+  'inbox.step3.button': '수신함 확인',
+  'inbox.copied': '브리프를 클립보드에 복사했습니다.',
+  'inbox.noNew': '수신함에 새 파일이 없습니다.',
+
+  'settings.title': '설정',
+  'settings.sub':
+    '사용할 언어와, Claude가 테스트를 만들 때 목표로 할 내용입니다.',
+  'settings.language': '언어',
+  'settings.languageHint':
+    '앱 화면과 새로 생성되는 테스트의 문제에 이 언어가 사용됩니다.',
+  'settings.languageUnsaved':
+    '미리 보기 중입니다. 이 언어를 유지하려면 설정을 저장하세요.',
+  'settings.level': '수준',
+  'settings.levelHint':
+    '자유롭게 입력하세요. 예: “JLPT N3 정도”, “B1, 읽기에 강함”.',
+  'settings.topics': '주제',
+  'settings.topicsHint': '주제는 쉼표로 구분하세요.',
+  'settings.questionCount': '테스트당 문제 수',
+  'settings.save': '설정 저장',
+  'settings.saved': '저장했습니다. 다음 테스트부터 적용됩니다.',
+  'settings.invalid':
+    '수준과 주제를 하나 이상 입력하세요. 테스트당 문제 수는 5~40개입니다.',
+
+  'review.back': '← 오늘',
+  'review.backTitle': '오늘로 돌아가기 (Esc)',
+  'review.title': '오늘의 복습',
+  'review.done': '완료',
+  'review.score': '{total}개 중 {correct}개 정답',
+  'review.doneSub':
+    '틀린 문제는 내일 다시 나오고, 맞힌 문제는 나중에 다시 나옵니다.',
+  'review.backToToday': '오늘로 돌아가기',
+  'review.saveError': '이 답변을 저장하지 못했습니다: {error}',
+  'review.readingPlaceholder': '읽는 법을 입력하세요 (로마자 가능)',
+
+  'feedback.correct': '✓ 정답',
+  'feedback.answer': '✗ 정답:',
+  'feedback.next': '다음 →',
+
+  'hint.small-tsu': '촉음 “っ”를 확인하세요.',
+  'hint.small-ya': '작은 “ゃ / ゅ / ょ”를 확인하세요.',
+  'hint.voiced-marks': '탁점 “゛”과 반탁점 “゜”을 확인하세요.',
+  'hint.vowel-length': '장음을 확인하세요.',
+};
+
+export const MESSAGES: Record<
+  Language,
+  { all: Messages; one: Partial<Messages> }
+> = {
+  en: { all: en, one: enOne },
+  'zh-Hans': { all: zhHans, one: {} },
+  'zh-Hant': { all: zhHant, one: {} },
+  ko: { all: ko, one: {} },
+};
+
+export const LOCALES: Record<Language, string | undefined> = {
+  en: undefined,
+  'zh-Hans': 'zh-CN',
+  'zh-Hant': 'zh-TW',
+  ko: 'ko-KR',
+};
+
+export function translate(
+  language: Language,
+  key: MessageKey,
+  params: Record<string, string | number> = {},
+): string {
+  const { all, one } = MESSAGES[language];
+  const template = (params.count === 1 && one[key]) || all[key];
+  return template.replace(/\{(\w+)\}/g, (match, name: string) =>
+    name in params ? String(params[name]) : match,
+  );
+}

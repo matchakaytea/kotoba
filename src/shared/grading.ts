@@ -1,9 +1,11 @@
 import type { MultipleChoiceQuestion, ReadingQuestion } from './test-schema';
 
+export type Hint = 'small-tsu' | 'small-ya' | 'voiced-marks' | 'vowel-length';
+
 export type GradeResult = {
   correct: boolean;
   expected: string;
-  hint?: string;
+  hint?: Hint;
 };
 
 export function gradeMultipleChoice(
@@ -39,20 +41,14 @@ export function normalizeKana(text: string): string {
 
 const SMALL_TO_LARGE: Record<string, string> = { ゃ: 'や', ゅ: 'ゆ', ょ: 'よ' };
 
-const NEAR_MISSES: [hint: string, simplify: (s: string) => string][] = [
-  ['Check the small っ (double consonant).', (s) => s.replace(/っ/g, '')],
-  [
-    'Check small ゃ / ゅ / ょ.',
-    (s) => s.replace(/[ゃゅょ]/g, (c) => SMALL_TO_LARGE[c]),
-  ],
-  [
-    'Check the voiced marks ゛ and ゜.',
-    (s) => s.normalize('NFD').replace(/[゙゚]/g, ''),
-  ],
-  ['Check the vowel length.', (s) => s.replace(/[うー]/g, '')],
+const NEAR_MISSES: [hint: Hint, simplify: (s: string) => string][] = [
+  ['small-tsu', (s) => s.replace(/っ/g, '')],
+  ['small-ya', (s) => s.replace(/[ゃゅょ]/g, (c) => SMALL_TO_LARGE[c])],
+  ['voiced-marks', (s) => s.normalize('NFD').replace(/[゙゚]/g, '')],
+  ['vowel-length', (s) => s.replace(/[うー]/g, '')],
 ];
 
-function nearMissHint(given: string, accepted: string[]): string | undefined {
+function nearMissHint(given: string, accepted: string[]): Hint | undefined {
   for (const [hint, simplify] of NEAR_MISSES) {
     if (accepted.some((answer) => simplify(answer) === simplify(given))) {
       return hint;

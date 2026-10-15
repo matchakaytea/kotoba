@@ -50,7 +50,19 @@ export type ImportReport = {
   rejected: { file: string; errors: string[] }[];
 };
 
+export const Language = z.enum(['en', 'zh-Hans', 'zh-Hant', 'ko']);
+
+export type Language = z.infer<typeof Language>;
+
+export const LANGUAGES: { code: Language; name: string; english: string }[] = [
+  { code: 'en', name: 'English', english: 'English' },
+  { code: 'zh-Hans', name: '简体中文', english: 'Simplified Chinese' },
+  { code: 'zh-Hant', name: '繁體中文', english: 'Traditional Chinese' },
+  { code: 'ko', name: '한국어', english: 'Korean' },
+];
+
 export const Settings = z.strictObject({
+  language: Language.default('en'),
   level: z.string().trim().min(1).max(100),
   topics: z.array(z.string().trim().min(1).max(50)).min(1).max(10),
   questionCount: z.number().int().min(5).max(40),
@@ -59,6 +71,7 @@ export const Settings = z.strictObject({
 export type Settings = z.infer<typeof Settings>;
 
 export const DEFAULT_SETTINGS: Settings = {
+  language: 'en',
   level: 'around JLPT N2',
   topics: ['IT', 'software engineering', 'workplace'],
   questionCount: 15,
