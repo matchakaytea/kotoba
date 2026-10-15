@@ -931,3 +931,20 @@ html:lang(ko) body {
   --radius: 14px;
   --border-width: 2px;
 }
+
+.row-actions {
+  display: inline-flex;
+  gap: 0.25rem;
+}
+
+button.subtle-neutral {
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+  padding: 0.3rem 0.75rem;
+}
+
+button.subtle-neutral:hover:not(:disabled) {
+  color: var(--accent);
+  background: var(--accent-soft);
+}

@@ -57,6 +57,12 @@ const en = {
   'library.delete': 'Delete',
   'library.confirm': 'Delete {count} questions?',
   'library.cancel': 'Cancel',
+  'library.translate': 'Translate',
+  'library.translating': 'Translating…',
+  'library.translateTitle': 'Translate the questions into {language}',
+  'library.translatingNotice':
+    'Claude is translating the questions into your app language. This takes a minute or two. Japanese words, readings and answers stay exactly the same.',
+  'library.translated': 'Translated “{title}”.',
   'library.footer':
     "Deleting a test removes its questions. Words you've already practised keep their progress, and come back in a future generated test.",
 
@@ -207,6 +213,12 @@ const zhHans: Messages = {
   'library.delete': '删除',
   'library.confirm': '删除 {count} 道题？',
   'library.cancel': '取消',
+  'library.translate': '翻译',
+  'library.translating': '翻译中…',
+  'library.translateTitle': '把题目翻译成{language}',
+  'library.translatingNotice':
+    'Claude 正在把题目翻译成应用语言，大约需要一两分钟。日语单词、读音和答案都会保持不变。',
+  'library.translated': '已翻译“{title}”。',
   'library.footer':
     '删除测试会移除其中的题目。已练习过的词会保留学习进度，并在之后生成的测试中再次出现。',
 
@@ -336,6 +348,12 @@ const zhHant: Messages = {
   'library.delete': '刪除',
   'library.confirm': '刪除 {count} 題？',
   'library.cancel': '取消',
+  'library.translate': '翻譯',
+  'library.translating': '翻譯中…',
+  'library.translateTitle': '把題目翻譯成{language}',
+  'library.translatingNotice':
+    'Claude 正在把題目翻譯成應用程式語言，大約需要一兩分鐘。日語單字、讀音和答案都會保持不變。',
+  'library.translated': '已翻譯「{title}」。',
   'library.footer':
     '刪除測驗會移除其中的題目。已練習過的單字會保留學習進度，並在之後產生的測驗中再次出現。',
 
@@ -466,6 +484,12 @@ const ko: Messages = {
   'library.delete': '삭제',
   'library.confirm': '문제 {count}개를 삭제할까요?',
   'library.cancel': '취소',
+  'library.translate': '번역',
+  'library.translating': '번역 중…',
+  'library.translateTitle': '문제를 {language}(으)로 번역합니다',
+  'library.translatingNotice':
+    'Claude가 문제를 앱 언어로 번역하고 있습니다. 1~2분 정도 걸립니다. 일본어 단어, 읽는 법, 정답은 그대로 유지됩니다.',
+  'library.translated': '“{title}” 번역 완료.',
   'library.footer':
     '테스트를 삭제하면 그 안의 문제가 삭제됩니다. 이미 연습한 단어는 학습 기록이 유지되며, 이후 생성되는 테스트에 다시 나옵니다.',
 

@@ -52,8 +52,8 @@ Rules:
 - Fill the remaining questions with new, useful words for a learner ${brief.learner.level}, on these topics: ${brief.learner.topics.join(', ')}.
 - Every question lists its targets: { expression, reading, skill }. Use skill "reading" for reading questions and "meaning" for multiple-choice meaning questions.
 - reading: "prompt" is the word in kanji, "answers" lists every valid reading in hiragana only. Add a "context" sentence when the reading depends on it.
-- multiple_choice: 4 options, exactly one correct, no duplicates, plausible distractors. Write the question prompts in ${brief.learner.prompt_language}; options stay in Japanese.
-- Write "title" in ${brief.learner.prompt_language}.
+- multiple_choice: 4 options, exactly one correct, no duplicates, plausible distractors.
+- Language: write every question prompt, every option that is a meaning or explanation, and the "title" in ${brief.learner.prompt_language}. Japanese words, readings, example sentences and "context" stay in Japanese. Never write prompts or meanings in English unless the language above is English.
 - Use "test_id": "claude-${brief.date}-" followed by 4 random letters, and a short descriptive "title".
 - Double-check every reading. A wrong answer key teaches the wrong thing.
 
@@ -62,5 +62,28 @@ ${schema}
 
 Brief:
 ${JSON.stringify(brief, null, 2)}
+`;
+}
+
+export function translatePrompt(test: LangTest, language: string): string {
+  return `Translate this Kotoba practice test for a learner whose app language is ${language}.
+
+Return ONLY the translated test as one JSON object with exactly the same structure. No explanation, no Markdown code fences.
+
+Translate into ${language}:
+- "title"
+- every "prompt" of a multiple_choice question
+- every multiple_choice option that is a meaning, definition or explanation (not a Japanese word)
+
+Keep exactly as they are, character for character:
+- "format", "format_version", "test_id", "language"
+- the order and number of questions, every "template", "answer_index" and "targets"
+- reading questions entirely: "prompt", "answers" and "context"
+- every Japanese word, reading or sentence, wherever it appears
+
+If something is already in ${language}, leave it unchanged.
+
+Test:
+${JSON.stringify(test, null, 2)}
 `;
 }

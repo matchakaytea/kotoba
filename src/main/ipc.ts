@@ -3,8 +3,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
 import { z } from 'zod';
-import { AttemptInput, Settings, type ImportReport } from '../shared/api';
-import { briefPrompt, buildBrief } from './brief';
+import {
+  AttemptInput,
+  LANGUAGES,
+  Settings,
+  type ImportReport,
+} from '../shared/api';
+import { checkTranslation } from '../shared/translation-check';
+import { validateTestFile } from '../shared/validate-test-file';
+import { briefPrompt, buildBrief, translatePrompt } from './brief';
 import {
   buildSession,
   deleteTest,
@@ -12,9 +19,11 @@ import {
   getMistakes,
   getSettings,
   getSummary,
+  getTest,
   getToday,
   recordAttempt,
   saveSettings,
+  saveTest,
 } from './database';
 import { extractJson, findClaude, runClaude } from './generate';
 import { ensureInboxDirs, importInbox, type InboxDirs } from './inbox';
@@ -26,6 +35,8 @@ type Context = {
   workDir: string;
   isTrustedSender: (event: IpcMainInvokeEvent) => boolean;
 };
+
+const TestId = z.string().min(1).max(200);
 
 export function registerIpcHandlers({
   db,
@@ -46,7 +57,7 @@ export function registerIpcHandlers({
   }
 
   let unseen: ImportReport = { imported: [], rejected: [] };
-  let generating = false;
+  let claudeBusy = false;
 
   function importAndRemember(): ImportReport {
     const report = importInbox(db, dirs);
@@ -55,6 +66,20 @@ export function registerIpcHandlers({
       rejected: [...unseen.rejected, ...report.rejected],
     };
     return unseen;
+  }
+
+  async function askClaude(prompt: string): Promise<string> {
+    if (claudeBusy) throw new Error('Claude is already working on something.');
+    const claude = findClaude();
+    if (!claude) throw new Error('The Claude CLI was not found.');
+
+    claudeBusy = true;
+    try {
+      fs.mkdirSync(workDir, { recursive: true });
+      return extractJson(await runClaude(claude, prompt, workDir));
+    } finally {
+      claudeBusy = false;
+    }
   }
 
   handle('attempt:save', (_event, payload) => {
@@ -66,7 +91,7 @@ export function registerIpcHandlers({
   handle('mistakes:get', () => getMistakes(db));
   handle('library:get', () => getLibrary(db));
   handle('library:delete', (_event, payload) => {
-    deleteTest(db, z.string().min(1).max(200).parse(payload));
+    deleteTest(db, TestId.parse(payload));
     return getLibrary(db);
   });
   handle('settings:get', () => getSettings(db));
@@ -92,29 +117,37 @@ export function registerIpcHandlers({
   handle('claude:status', () => ({ found: findClaude() !== null }));
 
   handle('claude:generate', async () => {
-    if (generating) throw new Error('A test is already being generated.');
-    const claude = findClaude();
-    if (!claude) throw new Error('The Claude CLI was not found.');
+    const reply = await askClaude(briefPrompt(buildBrief(db)));
+    ensureInboxDirs(dirs);
+    const now = new Date();
+    const time = now.toTimeString().slice(0, 8).replace(/:/g, '');
+    const file = path.join(dirs.inbox, `claude-${localDay(now)}-${time}.json`);
+    fs.writeFileSync(file, reply, 'utf8');
+    return importAndRemember();
+  });
 
-    generating = true;
-    try {
-      fs.mkdirSync(workDir, { recursive: true });
-      const reply = await runClaude(
-        claude,
-        briefPrompt(buildBrief(db)),
-        workDir,
+  handle('library:translate', async (_event, payload) => {
+    const stored = getTest(db, TestId.parse(payload));
+    if (!stored) throw new Error('That test no longer exists.');
+
+    const language =
+      LANGUAGES.find((option) => option.code === getSettings(db).language)
+        ?.english ?? 'English';
+    const reply = await askClaude(translatePrompt(stored.test, language));
+
+    const result = validateTestFile(reply);
+    if (!result.ok) {
+      throw new Error(
+        `Claude returned a test that doesn't pass the checks, so nothing was changed. ${result.errors.slice(0, 3).join(' · ')}`,
       );
-      ensureInboxDirs(dirs);
-      const now = new Date();
-      const time = now.toTimeString().slice(0, 8).replace(/:/g, '');
-      const file = path.join(
-        dirs.inbox,
-        `claude-${localDay(now)}-${time}.json`,
-      );
-      fs.writeFileSync(file, extractJson(reply), 'utf8');
-      return importAndRemember();
-    } finally {
-      generating = false;
     }
+    const problems = checkTranslation(stored.test, result.test);
+    if (problems.length > 0) {
+      throw new Error(
+        `The translation changed more than the wording, so nothing was changed. ${problems.slice(0, 3).join(' · ')}`,
+      );
+    }
+    saveTest(db, result.test, stored.importedAt);
+    return getLibrary(db);
   });
 }

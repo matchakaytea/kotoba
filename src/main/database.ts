@@ -366,6 +366,34 @@ function expectedAnswer(question: Question): string {
   }
 }
 
+export function getTest(
+  db: DatabaseSync,
+  testId: string,
+): { test: LangTest; importedAt: Date } | null {
+  const row = db
+    .prepare('SELECT title, imported_at AS importedAt FROM tests WHERE id = ?')
+    .get(testId) as { title: string; importedAt: string } | undefined;
+  if (!row) return null;
+  const questions = (
+    db
+      .prepare(
+        'SELECT body FROM questions WHERE test_id = ? ORDER BY question_index',
+      )
+      .all(testId) as { body: string }[]
+  ).map((question) => Question.parse(JSON.parse(question.body)));
+  return {
+    test: {
+      format: 'langtest',
+      format_version: 1,
+      test_id: testId,
+      language: 'ja',
+      title: row.title,
+      questions,
+    },
+    importedAt: new Date(row.importedAt),
+  };
+}
+
 export function getLibrary(db: DatabaseSync): LibraryTest[] {
   return db
     .prepare(

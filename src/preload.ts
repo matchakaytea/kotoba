@@ -15,6 +15,7 @@ const api: KotobaApi = {
   getMistakes: () => ipcRenderer.invoke('mistakes:get'),
   getLibrary: () => ipcRenderer.invoke('library:get'),
   deleteTest: (testId) => ipcRenderer.invoke('library:delete', testId),
+  translateTest: (testId) => ipcRenderer.invoke('library:translate', testId),
   getSettings: () => ipcRenderer.invoke('settings:get'),
   saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings),
 };

@@ -86,7 +86,7 @@ describe('buildBrief with saved settings', () => {
 describe('briefPrompt language', () => {
   it('asks for prompts in English by default', () => {
     const prompt = briefPrompt(buildBrief(databaseWithMistake(), tuesday));
-    expect(prompt).toContain('Write the question prompts in English');
+    expect(prompt).toContain('and the "title" in English');
   });
 
   it('asks for prompts in the chosen app language', async () => {
@@ -95,8 +95,8 @@ describe('briefPrompt language', () => {
     saveSettings(db, { ...getSettings(db), language: 'zh-Hant' });
     const prompt = briefPrompt(buildBrief(db, tuesday));
     expect(prompt).toContain(
-      'Write the question prompts in Traditional Chinese',
+      'every option that is a meaning or explanation, and the "title" in Traditional Chinese',
     );
-    expect(prompt).toContain('Write "title" in Traditional Chinese');
+    expect(prompt).toContain('Never write prompts or meanings in English');
   });
 });

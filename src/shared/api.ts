@@ -142,6 +142,7 @@ export interface KotobaApi {
   getMistakes(): Promise<Mistake[]>;
   getLibrary(): Promise<LibraryTest[]>;
   deleteTest(testId: string): Promise<LibraryTest[]>;
+  translateTest(testId: string): Promise<LibraryTest[]>;
   getSettings(): Promise<Settings>;
   saveSettings(settings: Settings): Promise<Settings>;
 }

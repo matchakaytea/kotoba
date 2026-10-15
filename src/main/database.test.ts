@@ -9,6 +9,7 @@ import {
   getMistakes,
   getSettings,
   getSummary,
+  getTest,
   getToday,
   migrate,
   MIGRATIONS,
@@ -619,5 +620,39 @@ describe('settings saved before languages existed', () => {
       topics: ['travel'],
       questionCount: 20,
     });
+  });
+});
+
+describe('getTest', () => {
+  it('returns a saved test unchanged, with its import time', () => {
+    const test: LangTest = {
+      format: 'langtest',
+      format_version: 1,
+      test_id: 'round-trip',
+      language: 'ja',
+      title: 'Round trip',
+      questions: [
+        {
+          template: 'reading',
+          prompt: '復旧',
+          answers: ['ふっきゅう'],
+          targets: [{ expression: '復旧', skill: 'reading' }],
+        },
+        {
+          template: 'multiple_choice',
+          prompt: "Which word means 'bug'?",
+          options: ['設定', '不具合'],
+          answer_index: 1,
+          targets: [{ expression: '不具合', skill: 'meaning' }],
+        },
+      ],
+    };
+    const when = new Date(2026, 9, 1, 12, 0);
+    saveTest(db, test, when);
+    expect(getTest(db, 'round-trip')).toEqual({ test, importedAt: when });
+  });
+
+  it('returns null for an unknown test', () => {
+    expect(getTest(db, 'missing')).toBeNull();
   });
 });
