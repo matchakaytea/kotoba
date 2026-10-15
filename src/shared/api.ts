@@ -61,8 +61,20 @@ export const LANGUAGES: { code: Language; name: string; english: string }[] = [
   { code: 'ko', name: '한국어', english: 'Korean' },
 ];
 
+export const TARGET_LANGUAGES = [
+  { code: 'ja', available: true },
+  { code: 'ko', available: false },
+  { code: 'zh', available: false },
+  { code: 'en', available: false },
+] as const;
+
+export type TargetLanguageCode = (typeof TARGET_LANGUAGES)[number]['code'];
+
+export const TargetLanguage = z.enum(['ja']);
+
 export const Settings = z.strictObject({
   language: Language.default('en'),
+  targetLanguage: TargetLanguage.default('ja'),
   level: z.string().trim().min(1).max(100),
   topics: z.array(z.string().trim().min(1).max(50)).min(1).max(10),
   questionCount: z.number().int().min(5).max(40),
@@ -72,6 +84,7 @@ export type Settings = z.infer<typeof Settings>;
 
 export const DEFAULT_SETTINGS: Settings = {
   language: 'en',
+  targetLanguage: 'ja',
   level: 'around JLPT N2',
   topics: ['IT', 'software engineering', 'workplace'],
   questionCount: 15,

@@ -483,6 +483,7 @@ describe('settings', () => {
   it('saves and reloads settings', () => {
     const settings = {
       language: 'ko' as const,
+      targetLanguage: 'ja' as const,
       level: 'JLPT N1',
       topics: ['finance'],
       questionCount: 25,
@@ -495,6 +496,7 @@ describe('settings', () => {
     expect(() =>
       saveSettings(db, {
         language: 'en',
+        targetLanguage: 'ja',
         level: '',
         topics: [],
         questionCount: 2,
@@ -610,6 +612,7 @@ describe('settings saved before languages existed', () => {
     );
     expect(getSettings(db)).toEqual({
       language: 'en',
+      targetLanguage: 'ja',
       level: 'JLPT N3',
       topics: ['travel'],
       questionCount: 20,

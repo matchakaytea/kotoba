@@ -66,6 +66,7 @@ describe('buildBrief with saved settings', () => {
     const db = databaseWithMistake();
     saveSettings(db, {
       language: 'en',
+      targetLanguage: 'ja',
       level: 'JLPT N1',
       topics: ['finance'],
       questionCount: 25,
