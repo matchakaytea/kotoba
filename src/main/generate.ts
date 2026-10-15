@@ -14,6 +14,7 @@ export function findClaude(env = process.env): ClaudeCommand | null {
   const candidates = [
     env.KOTOBA_CLAUDE_PATH,
     ...onPath(env.PATH ?? ''),
+    standaloneInstall(env.USERPROFILE ?? env.HOME),
     newestDesktopCopy(env.APPDATA),
   ];
   const found = candidates.find((file) => file && fs.existsSync(file));
@@ -32,6 +33,12 @@ function onPath(pathVariable: string): string[] {
     .split(path.delimiter)
     .filter(Boolean)
     .flatMap((dir) => names.map((name) => path.join(dir, name)));
+}
+
+function standaloneInstall(home: string | undefined): string | undefined {
+  if (!home) return undefined;
+  const name = process.platform === 'win32' ? 'claude.exe' : 'claude';
+  return path.join(home, '.local', 'bin', name);
 }
 
 function newestDesktopCopy(appData: string | undefined): string | undefined {

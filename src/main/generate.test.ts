@@ -125,6 +125,19 @@ describe('findClaude', () => {
     expect(findClaude({ PATH: '', APPDATA: dir })?.command).toBe(newer);
   });
 
+  it('finds the standalone install when it is not on PATH', () => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kotoba-find-'));
+    const name = process.platform === 'win32' ? 'claude.exe' : 'claude';
+    const standalone = makeFile('home', '.local', 'bin', name);
+    makeFile('Claude', 'claude-code', '2.1.9', 'bbb', 'claude.exe');
+    const found = findClaude({
+      PATH: '',
+      USERPROFILE: path.join(dir, 'home'),
+      APPDATA: dir,
+    });
+    expect(found?.command).toBe(standalone);
+  });
+
   it('returns null when nothing is installed', () => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kotoba-find-'));
     expect(findClaude({ PATH: '', APPDATA: dir })).toBeNull();
