@@ -49,6 +49,6 @@ much as finishing it.
 - [x] 2 Take a test – React UI, local grading, wanakana input
 - [x] 3 Save attempts – SQLite, migrations, preload API
 - [x] 4 Scheduling – FSRS, Today screen
-- [ ] 5 Inbox import + brief export
+- [x] 5 Inbox import + brief export
 - [ ] 6 Daily generation with `claude -p`
 - [ ] 7 AI grading for open answers

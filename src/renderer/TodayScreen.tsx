@@ -1,27 +1,50 @@
 import { useEffect, useState } from 'react';
-import type { DueTarget, Today } from '../shared/api';
-import type { LangTest } from '../shared/test-schema';
+import type { DueTarget, ImportReport, Today } from '../shared/api';
 
 type Props = {
-  test: LangTest;
   onStart: () => void;
 };
 
-export function TodayScreen({ test, onStart }: Props) {
+export function TodayScreen({ onStart }: Props) {
   const [today, setToday] = useState<Today | null>(null);
+  const [report, setReport] = useState<ImportReport | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  async function refresh() {
+    try {
+      setReport(await window.kotoba.importInbox());
+      setToday(await window.kotoba.getToday());
+    } catch (e) {
+      setError(String(e));
+    }
+  }
+
   useEffect(() => {
-    window.kotoba
-      .getToday()
-      .then(setToday)
-      .catch((e: unknown) => setError(String(e)));
+    refresh();
   }, []);
+
+  async function dismissReport() {
+    await window.kotoba.dismissImportReport();
+    setReport(null);
+  }
+
+  async function copyBrief() {
+    try {
+      await window.kotoba.copyBrief();
+      setMessage(
+        'Brief copied. Paste it into Claude, save the reply as a .json file in the inbox, then press Check inbox.',
+      );
+    } catch (e) {
+      setError(String(e));
+    }
+  }
 
   if (error) return <main className="save-error">{error}</main>;
   if (!today) return <main />;
 
-  const { due, nextDueDay, summary } = today;
+  const { due, nextDueDay, questionsReady, summary } = today;
+  const missing = due.filter((target) => !target.hasQuestion).length;
 
   return (
     <main>
@@ -36,9 +59,17 @@ export function TodayScreen({ test, onStart }: Props) {
         </span>
       </header>
 
+      {report && <ImportNotice report={report} onDismiss={dismissReport} />}
+
       {due.length > 0 ? (
         <>
-          <p className="due-count">{due.length} due today</p>
+          <p className="due-count">
+            {due.length} due today
+            <span className="next-due">
+              {questionsReady} questions ready
+              {missing > 0 && ` · ${missing} need new questions`}
+            </span>
+          </p>
           <ul className="due-list">
             {due.map((target) => (
               <DueItem
@@ -54,16 +85,26 @@ export function TodayScreen({ test, onStart }: Props) {
           Nothing due today.
           {nextDueDay && (
             <span className="next-due">
-              {' '}
               Next review: {formatDay(nextDueDay)}
             </span>
           )}
         </p>
       )}
 
-      <button className="start" autoFocus onClick={onStart}>
-        Start: {test.title}
-      </button>
+      <div className="actions">
+        <button
+          className="start"
+          autoFocus
+          disabled={questionsReady === 0}
+          onClick={onStart}
+        >
+          Start review
+        </button>
+        <button onClick={copyBrief}>Copy brief for Claude</button>
+        <button onClick={() => window.kotoba.openInbox()}>Open inbox</button>
+        <button onClick={refresh}>Check inbox</button>
+      </div>
+      {message && <p className="hint">{message}</p>}
 
       <p className="all-time">
         All time: {summary.correct} / {summary.attempts} answers correct ·{' '}
@@ -73,11 +114,48 @@ export function TodayScreen({ test, onStart }: Props) {
   );
 }
 
+function ImportNotice({
+  report,
+  onDismiss,
+}: {
+  report: ImportReport;
+  onDismiss: () => void;
+}) {
+  if (report.imported.length === 0 && report.rejected.length === 0) {
+    return null;
+  }
+  return (
+    <div className="import-notice">
+      <button className="dismiss" aria-label="Dismiss" onClick={onDismiss}>
+        ×
+      </button>
+      {report.imported.map((item, i) => (
+        <p key={`ok-${i}`}>
+          ✓ Imported “{item.title}” ({item.questions} questions)
+        </p>
+      ))}
+      {report.rejected.map((item, i) => (
+        <details key={`bad-${i}`} className="rejected">
+          <summary>
+            ✗ {item.file} was rejected ({item.errors.length} problems)
+          </summary>
+          <ul>
+            {item.errors.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </details>
+      ))}
+    </div>
+  );
+}
+
 function DueItem({ target, today }: { target: DueTarget; today: string }) {
   let status = 'new';
   if (target.dueDay && target.dueDay < today)
     status = `overdue since ${formatDay(target.dueDay)}`;
   else if (target.dueDay) status = 'due';
+  if (!target.hasQuestion) status += ' · no question';
 
   return (
     <li className="due-item">

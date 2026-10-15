@@ -202,3 +202,48 @@ button:disabled {
   border-color: var(--accent);
   margin-bottom: 1.5rem;
 }
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.actions .start {
+  margin-bottom: 0;
+}
+
+.import-notice {
+  margin-top: 1.5rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+}
+
+.import-notice p {
+  margin: 0.25rem 0;
+}
+
+.rejected summary {
+  color: var(--wrong);
+  cursor: pointer;
+}
+
+.rejected ul {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.import-notice {
+  position: relative;
+}
+
+.dismiss {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  color: var(--muted);
+}

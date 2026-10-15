@@ -1,13 +1,16 @@
 import { DatabaseSync } from 'node:sqlite';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { AttemptInput } from '../shared/api';
+import type { LangTest, Question } from '../shared/test-schema';
 import {
+  buildSession,
   getSummary,
   getToday,
   migrate,
   MIGRATIONS,
   openDatabase,
   recordAttempt,
+  saveTest,
   schemaVersion,
 } from './database';
 
@@ -193,6 +196,7 @@ describe('getToday', () => {
         reading: 'ふっきゅう',
         skill: 'reading',
         dueDay: '2026-10-13',
+        hasQuestion: false,
       },
     ]);
     expect(tuesday.nextDueDay! > '2026-10-13').toBe(true);
@@ -203,8 +207,142 @@ describe('getToday', () => {
       "INSERT INTO targets (expression, skill, created_at) VALUES ('導入', 'reading', 'x')",
     ).run();
     expect(getToday(db, monday).due).toEqual([
-      { expression: '導入', reading: null, skill: 'reading', dueDay: null },
+      {
+        expression: '導入',
+        reading: null,
+        skill: 'reading',
+        dueDay: null,
+        hasQuestion: false,
+      },
     ]);
+  });
+});
+
+describe('saveTest and buildSession', () => {
+  const monday = new Date(2026, 9, 12, 9, 0);
+
+  function readingQuestion(expression: string, reading: string): Question {
+    return {
+      template: 'reading',
+      prompt: expression,
+      answers: [reading],
+      targets: [{ expression, reading, skill: 'reading' }],
+    };
+  }
+
+  function makeTest(id: string, questions: Question[]): LangTest {
+    return {
+      format: 'langtest',
+      format_version: 1,
+      test_id: id,
+      language: 'ja',
+      title: `Test ${id}`,
+      questions,
+    };
+  }
+
+  it('stores questions and their targets', () => {
+    saveTest(
+      db,
+      makeTest('a', [readingQuestion('復旧', 'ふっきゅう')]),
+      monday,
+    );
+    expect(count('tests')).toBe(1);
+    expect(count('questions')).toBe(1);
+    expect(count('question_targets')).toBe(1);
+    expect(getToday(db, monday).due[0].hasQuestion).toBe(true);
+  });
+
+  it('replaces the questions when the same test is imported again', () => {
+    saveTest(
+      db,
+      makeTest('a', [readingQuestion('復旧', 'ふっきゅう')]),
+      monday,
+    );
+    saveTest(
+      db,
+      makeTest('a', [
+        readingQuestion('障害', 'しょうがい'),
+        readingQuestion('導入', 'どうにゅう'),
+      ]),
+      monday,
+    );
+    expect(count('tests')).toBe(1);
+    expect(count('questions')).toBe(2);
+    expect(count('question_targets')).toBe(2);
+  });
+
+  it('builds a session from questions whose targets are due', () => {
+    saveTest(
+      db,
+      makeTest('a', [
+        readingQuestion('復旧', 'ふっきゅう'),
+        readingQuestion('障害', 'しょうがい'),
+      ]),
+      monday,
+    );
+    const session = buildSession(db, monday);
+    expect(session.items.map((item) => item.question.prompt)).toEqual([
+      '復旧',
+      '障害',
+    ]);
+    expect(session.items[1]).toMatchObject({ testId: 'a', questionIndex: 1 });
+  });
+
+  it('leaves out targets that are not due yet', () => {
+    saveTest(
+      db,
+      makeTest('a', [readingQuestion('復旧', 'ふっきゅう')]),
+      monday,
+    );
+    recordAttempt(db, attempt, monday);
+    expect(buildSession(db, monday).items).toHaveLength(0);
+  });
+
+  it('asks about each target only once per session', () => {
+    saveTest(
+      db,
+      makeTest('a', [readingQuestion('復旧', 'ふっきゅう')]),
+      monday,
+    );
+    saveTest(
+      db,
+      makeTest('b', [readingQuestion('復旧', 'ふっきゅう')]),
+      monday,
+    );
+    const session = buildSession(db, monday);
+    expect(session.items).toHaveLength(1);
+    expect(session.items[0].testId).toBe('b');
+  });
+
+  it('respects the question and new-target limits', () => {
+    const words = ['一', '二', '三', '四', '五'].map((kanji, i) =>
+      readingQuestion(kanji, 'いちにさんしご'.slice(i, i + 1)),
+    );
+    saveTest(db, makeTest('a', words), monday);
+    expect(
+      buildSession(db, monday, { maxQuestions: 10, maxNewTargets: 2 }).items,
+    ).toHaveLength(2);
+    expect(
+      buildSession(db, monday, { maxQuestions: 3, maxNewTargets: 10 }).items,
+    ).toHaveLength(3);
+  });
+
+  it('puts reviews that are due before new targets', () => {
+    saveTest(
+      db,
+      makeTest('a', [
+        readingQuestion('障害', 'しょうがい'),
+        readingQuestion('復旧', 'ふっきゅう'),
+      ]),
+      monday,
+    );
+    recordAttempt(db, { ...attempt, correct: false }, monday);
+    const tuesday = new Date(2026, 9, 13, 9, 0);
+    const prompts = buildSession(db, tuesday).items.map(
+      (item) => item.question.prompt,
+    );
+    expect(prompts).toEqual(['復旧', '障害']);
   });
 });
 

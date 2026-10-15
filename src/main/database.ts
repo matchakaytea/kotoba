@@ -1,6 +1,13 @@
 import { DatabaseSync } from 'node:sqlite';
-import type { AttemptInput, DueTarget, Summary, Today } from '../shared/api';
-import type { Target } from '../shared/test-schema';
+import type {
+  AttemptInput,
+  DueTarget,
+  Session,
+  SessionItem,
+  Summary,
+  Today,
+} from '../shared/api';
+import { Question, type LangTest, type Target } from '../shared/test-schema';
 import {
   localDay,
   parseCard,
@@ -46,7 +53,32 @@ export const MIGRATIONS: string[] = [
 
   CREATE INDEX review_states_due_day ON review_states (due_day);
   `,
+  `
+  CREATE TABLE tests (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    imported_at TEXT NOT NULL
+  );
+
+  CREATE TABLE questions (
+    id INTEGER PRIMARY KEY,
+    test_id TEXT NOT NULL REFERENCES tests (id),
+    question_index INTEGER NOT NULL,
+    body TEXT NOT NULL,
+    UNIQUE (test_id, question_index)
+  );
+
+  CREATE TABLE question_targets (
+    question_id INTEGER NOT NULL REFERENCES questions (id) ON DELETE CASCADE,
+    target_id INTEGER NOT NULL REFERENCES targets (id),
+    PRIMARY KEY (question_id, target_id)
+  );
+
+  CREATE INDEX question_targets_target ON question_targets (target_id);
+  `,
 ];
+
+export const SESSION_LIMITS = { maxQuestions: 20, maxNewTargets: 10 };
 
 export function openDatabase(path: string): DatabaseSync {
   const db = new DatabaseSync(path);
@@ -109,21 +141,161 @@ export function recordAttempt(
   });
 }
 
-export function getToday(db: DatabaseSync, now = new Date()): Today {
-  const today = localDay(now);
-  const due = db
+export function saveTest(
+  db: DatabaseSync,
+  test: LangTest,
+  now = new Date(),
+): void {
+  transaction(db, () => {
+    db.prepare(
+      `INSERT INTO tests (id, title, imported_at) VALUES (?, ?, ?)
+       ON CONFLICT (id) DO UPDATE SET
+         title = excluded.title,
+         imported_at = excluded.imported_at`,
+    ).run(test.test_id, test.title, now.toISOString());
+    db.prepare('DELETE FROM questions WHERE test_id = ?').run(test.test_id);
+
+    const insertQuestion = db.prepare(
+      'INSERT INTO questions (test_id, question_index, body) VALUES (?, ?, ?) RETURNING id',
+    );
+    const link = db.prepare(
+      'INSERT OR IGNORE INTO question_targets (question_id, target_id) VALUES (?, ?)',
+    );
+    test.questions.forEach((question, index) => {
+      const row = insertQuestion.get(
+        test.test_id,
+        index,
+        JSON.stringify(question),
+      ) as { id: number };
+      for (const target of question.targets) {
+        link.run(row.id, upsertTarget(db, target, now));
+      }
+    });
+  });
+}
+
+type DueRow = {
+  id: number;
+  expression: string;
+  reading: string | null;
+  skill: string;
+  dueDay: string | null;
+  hasQuestion: number;
+};
+
+function dueTargets(db: DatabaseSync, today: string): DueRow[] {
+  return db
     .prepare(
-      `SELECT t.expression, t.reading, t.skill, r.due_day AS dueDay
+      `SELECT t.id, t.expression, t.reading, t.skill, r.due_day AS dueDay,
+              EXISTS (SELECT 1 FROM question_targets qt WHERE qt.target_id = t.id) AS hasQuestion
        FROM targets t
        LEFT JOIN review_states r ON r.target_id = t.id
        WHERE r.due_day IS NULL OR r.due_day <= ?
        ORDER BY r.due_day IS NULL, r.due_day, t.id`,
     )
-    .all(today) as DueTarget[];
+    .all(today) as DueRow[];
+}
+
+export function buildSession(
+  db: DatabaseSync,
+  now = new Date(),
+  limits = SESSION_LIMITS,
+): Session {
+  const questionsFor = db.prepare(
+    `SELECT q.id, q.test_id AS testId, q.question_index AS questionIndex, q.body
+     FROM questions q
+     JOIN question_targets qt ON qt.question_id = q.id
+     WHERE qt.target_id = ?
+     ORDER BY q.id DESC`,
+  );
+  const targetsOf = db.prepare(
+    'SELECT target_id AS id FROM question_targets WHERE question_id = ?',
+  );
+
+  const covered = new Set<number>();
+  const chosen = new Set<number>();
+  const items: SessionItem[] = [];
+  let newTargets = 0;
+
+  for (const target of dueTargets(db, localDay(now))) {
+    if (items.length >= limits.maxQuestions) break;
+    if (covered.has(target.id)) continue;
+
+    const isNew = target.dueDay === null;
+    if (isNew && newTargets >= limits.maxNewTargets) continue;
+
+    const candidates = questionsFor.all(target.id) as {
+      id: number;
+      testId: string;
+      questionIndex: number;
+      body: string;
+    }[];
+    const question = candidates.find((c) => !chosen.has(c.id));
+    if (!question) continue;
+
+    chosen.add(question.id);
+    for (const row of targetsOf.all(question.id) as { id: number }[]) {
+      covered.add(row.id);
+    }
+    if (isNew) newTargets++;
+
+    items.push({
+      testId: question.testId,
+      questionIndex: question.questionIndex,
+      question: Question.parse(JSON.parse(question.body)),
+    });
+  }
+
+  return { title: "Today's review", items };
+}
+
+export function getToday(db: DatabaseSync, now = new Date()): Today {
+  const today = localDay(now);
+  const due: DueTarget[] = dueTargets(db, today).map((row) => ({
+    expression: row.expression,
+    reading: row.reading,
+    skill: row.skill,
+    dueDay: row.dueDay,
+    hasQuestion: row.hasQuestion === 1,
+  }));
   const next = db
     .prepare('SELECT MIN(due_day) AS day FROM review_states WHERE due_day > ?')
     .get(today) as { day: string | null };
-  return { today, due, nextDueDay: next.day, summary: getSummary(db) };
+  return {
+    today,
+    due,
+    nextDueDay: next.day,
+    questionsReady: buildSession(db, now).items.length,
+    summary: getSummary(db),
+  };
+}
+
+export type BriefData = {
+  due: DueTarget[];
+  mistakes: {
+    expression: string;
+    skill: string;
+    answer: string;
+    day: string;
+  }[];
+};
+
+export function getBriefData(db: DatabaseSync, now = new Date()): BriefData {
+  const today = getToday(db, now);
+  const since = new Date(now);
+  since.setDate(since.getDate() - 14);
+  const mistakes = db
+    .prepare(
+      `SELECT t.expression, t.skill, a.answer, substr(a.answered_at, 1, 10) AS day
+       FROM attempts a
+       JOIN attempt_targets at ON at.attempt_id = a.id
+       JOIN targets t ON t.id = at.target_id
+       WHERE a.correct = 0 AND a.answered_at >= ?
+       ORDER BY a.answered_at DESC
+       LIMIT 30`,
+    )
+    .all(since.toISOString()) as BriefData['mistakes'];
+  return { due: today.due, mistakes };
 }
 
 export function getSummary(db: DatabaseSync): Summary {

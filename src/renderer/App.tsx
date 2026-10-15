@@ -1,15 +1,17 @@
 import { useState } from 'react';
-import { sampleTest } from './sample-test';
+import type { Session } from '../shared/api';
 import { TestRunner } from './TestRunner';
 import { TodayScreen } from './TodayScreen';
 
-type Screen = 'today' | 'test';
-
 export function App() {
-  const [screen, setScreen] = useState<Screen>('today');
+  const [session, setSession] = useState<Session | null>(null);
 
-  if (screen === 'test') {
-    return <TestRunner test={sampleTest} onExit={() => setScreen('today')} />;
+  async function start() {
+    setSession(await window.kotoba.getSession());
   }
-  return <TodayScreen test={sampleTest} onStart={() => setScreen('test')} />;
+
+  if (session && session.items.length > 0) {
+    return <TestRunner session={session} onExit={() => setSession(null)} />;
+  }
+  return <TodayScreen onStart={start} />;
 }

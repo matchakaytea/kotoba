@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Target } from './test-schema';
+import { Target, type Question } from './test-schema';
 
 export const AttemptInput = z.strictObject({
   testId: z.string().min(1).max(200),
@@ -23,17 +23,40 @@ export type DueTarget = {
   reading: string | null;
   skill: string;
   dueDay: string | null;
+  hasQuestion: boolean;
 };
 
 export type Today = {
   today: string;
   due: DueTarget[];
   nextDueDay: string | null;
+  questionsReady: number;
   summary: Summary;
+};
+
+export type SessionItem = {
+  testId: string;
+  questionIndex: number;
+  question: Question;
+};
+
+export type Session = {
+  title: string;
+  items: SessionItem[];
+};
+
+export type ImportReport = {
+  imported: { file: string; title: string; questions: number }[];
+  rejected: { file: string; errors: string[] }[];
 };
 
 export interface KotobaApi {
   saveAttempt(input: AttemptInput): Promise<void>;
   getSummary(): Promise<Summary>;
   getToday(): Promise<Today>;
+  getSession(): Promise<Session>;
+  importInbox(): Promise<ImportReport>;
+  dismissImportReport(): Promise<void>;
+  openInbox(): Promise<void>;
+  copyBrief(): Promise<void>;
 }

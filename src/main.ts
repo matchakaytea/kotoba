@@ -2,11 +2,17 @@ import { app, BrowserWindow } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { openDatabase } from './main/database';
+import { inboxDirs } from './main/inbox';
 import { registerIpcHandlers } from './main/ipc';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
   app.quit();
+}
+
+// Lets a test run use its own data folder instead of the real one.
+if (process.env.KOTOBA_USER_DATA) {
+  app.setPath('userData', process.env.KOTOBA_USER_DATA);
 }
 
 let mainWindow: BrowserWindow | null = null;
@@ -43,16 +49,18 @@ const createWindow = () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
-  const db = openDatabase(path.join(app.getPath('userData'), 'kotoba.db'));
+  const userData = app.getPath('userData');
+  const db = openDatabase(path.join(userData, 'kotoba.db'));
   app.on('will-quit', () => db.close());
 
-  registerIpcHandlers(
+  registerIpcHandlers({
     db,
-    (event) =>
+    dirs: inboxDirs(userData),
+    isTrustedSender: (event) =>
       mainWindow !== null &&
       event.sender === mainWindow.webContents &&
       event.senderFrame === mainWindow.webContents.mainFrame,
-  );
+  });
 
   createWindow();
 
