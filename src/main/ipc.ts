@@ -1,4 +1,10 @@
-import { clipboard, ipcMain, shell, type IpcMainInvokeEvent } from 'electron';
+import {
+  clipboard,
+  dialog,
+  ipcMain,
+  shell,
+  type IpcMainInvokeEvent,
+} from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
@@ -38,6 +44,7 @@ type Context = {
 };
 
 const TestId = z.string().min(1).max(200);
+const MAX_PICTURE_BYTES = 15 * 1024 * 1024;
 
 export function registerIpcHandlers({
   db,
@@ -113,6 +120,26 @@ export function registerIpcHandlers({
 
   handle('brief:copy', () => {
     clipboard.writeText(briefPrompt(buildBrief(db)));
+  });
+
+  handle('picture:pick', async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ['openFile'],
+      filters: [
+        {
+          name: 'Pictures',
+          extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'],
+        },
+      ],
+    });
+    const file = result.filePaths[0];
+    if (result.canceled || !file) return null;
+    if (fs.statSync(file).size > MAX_PICTURE_BYTES) {
+      throw new Error('That picture is larger than 15 MB.');
+    }
+    const extension = path.extname(file).slice(1).toLowerCase();
+    const type = extension === 'jpg' ? 'jpeg' : extension;
+    return `data:image/${type};base64,${fs.readFileSync(file).toString('base64')}`;
   });
 
   handle('claude:status', () => ({ found: findClaude() !== null }));

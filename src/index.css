@@ -948,3 +948,89 @@ button.subtle-neutral:hover:not(:disabled) {
   color: var(--accent);
   background: var(--accent-soft);
 }
+
+.custom-skin {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem 1.25rem;
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.custom-skin-picture {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.custom-skin-picture .field-hint {
+  margin-top: 0.4rem;
+}
+
+.custom-skin-thumb {
+  width: 96px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: var(--radius);
+  border: var(--border-width) solid var(--border);
+  flex-shrink: 0;
+}
+
+.custom-skin-empty {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--hover),
+    var(--hover) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+}
+
+.swatch-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.swatch-row .field-label {
+  width: 9rem;
+  flex-shrink: 0;
+}
+
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.swatch {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--border-strong);
+}
+
+.swatch.selected {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.segmented {
+  display: inline-flex;
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.segmented button {
+  border: none;
+  border-radius: 0;
+  padding: 0.35rem 1rem;
+}
+
+.segmented button.active {
+  background: var(--accent);
+  color: var(--on-accent);
+}

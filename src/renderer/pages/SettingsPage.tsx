@@ -7,6 +7,9 @@ import {
   type Language,
   type Theme,
 } from '../../shared/api';
+import type { CustomColors, Swatch } from '../../shared/palette';
+import { suggestColors } from '../../shared/palette';
+import { CustomSkinPanel } from '../CustomSkinPanel';
 import { cleanError } from '../format';
 import { useI18n } from '../i18n/i18n';
 
@@ -33,7 +36,7 @@ const NATIVE_NAMES: Record<(typeof TARGET_LANGUAGES)[number]['code'], string> =
 
 type Props = {
   onLanguageChange: (language: Language) => void;
-  onThemeChange: (theme: Theme) => void;
+  onThemeChange: (theme: Theme, colors?: CustomColors) => void;
 };
 
 export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
@@ -42,6 +45,10 @@ export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
   const [savedLanguage, setSavedLanguage] = useState<Language>('en');
   const [theme, setTheme] = useState<Theme>('default');
   const [savedTheme, setSavedTheme] = useState<Theme>('default');
+  const [colors, setColors] = useState<CustomColors | undefined>();
+  const [savedColors, setSavedColors] = useState<CustomColors | undefined>();
+  const [swatches, setSwatches] = useState<Swatch[]>([]);
+  const [picture, setPicture] = useState<string | null>(null);
   const [level, setLevel] = useState('');
   const [levelChoice, setLevelChoice] = useState<LevelChoice>('N2');
   const [topics, setTopics] = useState('');
@@ -49,8 +56,16 @@ export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
   const [loaded, setLoaded] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
 
-  const savedRef = useRef({ language: savedLanguage, theme: savedTheme });
-  savedRef.current = { language: savedLanguage, theme: savedTheme };
+  const savedRef = useRef({
+    language: savedLanguage,
+    theme: savedTheme,
+    colors: savedColors,
+  });
+  savedRef.current = {
+    language: savedLanguage,
+    theme: savedTheme,
+    colors: savedColors,
+  };
 
   useEffect(() => {
     window.kotoba.getSettings().then((settings) => {
@@ -58,6 +73,14 @@ export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
       setSavedLanguage(settings.language);
       setTheme(settings.theme);
       setSavedTheme(settings.theme);
+      setColors(settings.customColors);
+      setSavedColors(settings.customColors);
+      if (settings.customColors) {
+        setSwatches([
+          { hex: settings.customColors.base, share: 1 },
+          { hex: settings.customColors.accent, share: 0 },
+        ]);
+      }
       setLevel(settings.level);
       setLevelChoice(levelChoiceOf(settings.level));
       setTopics(settings.topics.join(', '));
@@ -66,7 +89,7 @@ export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
     });
     return () => {
       onLanguageChange(savedRef.current.language);
-      onThemeChange(savedRef.current.theme);
+      onThemeChange(savedRef.current.theme, savedRef.current.colors);
     };
   }, [onLanguageChange, onThemeChange]);
 
@@ -75,9 +98,16 @@ export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
     onLanguageChange(next);
   }
 
-  function previewTheme(next: Theme) {
+  function previewTheme(next: Theme, nextColors = colors) {
     setTheme(next);
-    onThemeChange(next);
+    setColors(nextColors);
+    onThemeChange(next, nextColors);
+  }
+
+  function applySwatches(found: Swatch[], dataUrl: string) {
+    setPicture(dataUrl);
+    setSwatches(found);
+    previewTheme('custom', suggestColors(found));
   }
 
   function chooseLevel(choice: LevelChoice) {
@@ -94,6 +124,7 @@ export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
     const parsed = Settings.safeParse({
       language,
       theme,
+      ...(colors ? { customColors: colors } : {}),
       targetLanguage: 'ja',
       level,
       topics: topics
@@ -106,12 +137,17 @@ export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
       setStatus({ ok: false, error: null });
       return;
     }
+    if (theme === 'custom' && !colors) {
+      setStatus({ ok: false, error: t('custom.needPicture') });
+      return;
+    }
     try {
       const saved = await window.kotoba.saveSettings(parsed.data);
       setSavedLanguage(saved.language);
       setSavedTheme(saved.theme);
+      setSavedColors(saved.customColors);
       onLanguageChange(saved.language);
-      onThemeChange(saved.theme);
+      onThemeChange(saved.theme, saved.customColors);
       setStatus({ ok: true });
     } catch (e) {
       setStatus({ ok: false, error: cleanError(e) });
@@ -167,18 +203,31 @@ export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
                   <option key={option.code} value={option.code}>
                     {option.code === 'default'
                       ? t('settings.themeDefault')
-                      : option.name}
+                      : option.code === 'custom'
+                        ? t('settings.themeCustom')
+                        : option.name}
                   </option>
                 ))}
               </select>
             </span>
             <span className="field-hint">
-              {theme !== savedTheme
+              {theme !== savedTheme ||
+              JSON.stringify(colors) !== JSON.stringify(savedColors)
                 ? t('settings.themeUnsaved')
                 : t('settings.themeHint')}
             </span>
           </label>
         </div>
+
+        {theme === 'custom' && (
+          <CustomSkinPanel
+            colors={colors}
+            swatches={swatches}
+            picture={picture}
+            onPicture={applySwatches}
+            onChange={(next) => previewTheme('custom', next)}
+          />
+        )}
 
         <div className="field-row">
           <div className="field">

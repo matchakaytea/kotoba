@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { ImportReport, Language, Session, Theme } from '../shared/api';
+import type { CustomColors } from '../shared/palette';
 import { cleanError } from './format';
 import { I18nProvider } from './i18n/i18n';
 import { InboxPage } from './pages/InboxPage';
@@ -9,10 +10,13 @@ import { SettingsPage } from './pages/SettingsPage';
 import { TodayPage } from './pages/TodayPage';
 import { Sidebar, type Page } from './Sidebar';
 import { TestRunner } from './TestRunner';
+import { applyTheme } from './theme';
 
 export function App() {
   const [language, setLanguage] = useState<Language | null>(null);
-  const [theme, setTheme] = useState<Theme>('default');
+  const [skin, setSkin] = useState<{ theme: Theme; colors?: CustomColors }>({
+    theme: 'default',
+  });
   const [page, setPage] = useState<Page>('today');
   const [session, setSession] = useState<Session | null>(null);
   const [claudeAvailable, setClaudeAvailable] = useState(false);
@@ -25,7 +29,7 @@ export function App() {
       .getSettings()
       .then((settings) => {
         setLanguage(settings.language);
-        setTheme(settings.theme);
+        setSkin({ theme: settings.theme, colors: settings.customColors });
       })
       .catch(() => setLanguage('en'));
     window.kotoba
@@ -34,12 +38,13 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    if (theme === 'default') {
-      delete document.documentElement.dataset.theme;
-    } else {
-      document.documentElement.dataset.theme = theme;
-    }
-  }, [theme]);
+    applyTheme(skin.theme, skin.colors);
+  }, [skin]);
+
+  const changeSkin = useCallback(
+    (theme: Theme, colors?: CustomColors) => setSkin({ theme, colors }),
+    [],
+  );
 
   async function start() {
     const next = await window.kotoba.getSession();
@@ -91,7 +96,7 @@ export function App() {
             {page === 'settings' && (
               <SettingsPage
                 onLanguageChange={setLanguage}
-                onThemeChange={setTheme}
+                onThemeChange={changeSkin}
               />
             )}
           </main>

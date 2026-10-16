@@ -1,6 +1,8 @@
 import { app, BrowserWindow, nativeTheme, screen } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
+import type { Settings } from './shared/api';
+import { buildPalette } from './shared/palette';
 import { getSettings, openDatabase } from './main/database';
 import { inboxDirs } from './main/inbox';
 import { registerIpcHandlers } from './main/ipc';
@@ -89,7 +91,7 @@ app.whenReady().then(() => {
       event.senderFrame === mainWindow.webContents.mainFrame,
   });
 
-  const background = () => windowBackground(getSettings(db).theme);
+  const background = () => windowBackground(getSettings(db));
   createWindow(background());
 
   // On OS X it's common to re-create a window in the app when the
@@ -118,9 +120,12 @@ const SKIN_BACKGROUNDS: Record<string, string> = {
   mochi: '#fdf8ee',
 };
 
-function windowBackground(theme: string): string {
+function windowBackground(settings: Settings): string {
+  if (settings.theme === 'custom' && settings.customColors) {
+    return buildPalette(settings.customColors)['--bg'];
+  }
   return (
-    SKIN_BACKGROUNDS[theme] ??
+    SKIN_BACKGROUNDS[settings.theme] ??
     (nativeTheme.shouldUseDarkColors ? '#18181b' : '#f7f7f4')
   );
 }

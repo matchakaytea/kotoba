@@ -64,6 +64,14 @@ export type TargetLanguageCode = (typeof TARGET_LANGUAGES)[number]['code'];
 
 export const TargetLanguage = z.enum(['ja']);
 
+const HexColor = z.string().regex(/^#[0-9a-f]{6}$/);
+
+export const CustomColors = z.strictObject({
+  base: HexColor,
+  accent: HexColor,
+  mode: z.enum(['light', 'dark']),
+});
+
 export const Theme = z.enum([
   'default',
   'washi',
@@ -71,6 +79,7 @@ export const Theme = z.enum([
   'matcha',
   'tokyo-night',
   'mochi',
+  'custom',
 ]);
 
 export type Theme = z.infer<typeof Theme>;
@@ -82,11 +91,13 @@ export const THEMES: { code: Theme; name: string }[] = [
   { code: 'matcha', name: 'Matcha · 抹茶' },
   { code: 'tokyo-night', name: 'Tokyo night · 東京の夜' },
   { code: 'mochi', name: 'Mochi · もち' },
+  { code: 'custom', name: '' },
 ];
 
 export const Settings = z.strictObject({
   language: Language.default('en'),
   theme: Theme.default('default'),
+  customColors: CustomColors.optional(),
   targetLanguage: TargetLanguage.default('ja'),
   level: z.string().trim().min(1).max(100),
   topics: z.array(z.string().trim().min(1).max(50)).min(1).max(10),
@@ -138,4 +149,5 @@ export interface KotobaApi {
   translateTest(testId: string): Promise<LibraryTest[]>;
   getSettings(): Promise<Settings>;
   saveSettings(settings: Settings): Promise<Settings>;
+  pickPicture(): Promise<string | null>;
 }
