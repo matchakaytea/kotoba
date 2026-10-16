@@ -19,7 +19,8 @@
     "lint": "oxlint && oxfmt --check",
     "lint:fix": "oxlint --fix && oxfmt --write",
     "typecheck": "tsc --noEmit",
-    "test": "vitest"
+    "test": "vitest",
+    "build:jlpt": "node scripts/build-jlpt.mts"
   },
   "devDependencies": {
     "@electron-forge/cli": "^8.0.1",

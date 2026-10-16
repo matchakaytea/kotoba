@@ -486,6 +486,7 @@ describe('settings', () => {
       level: 'JLPT N1',
       topics: ['finance'],
       questionCount: 25,
+      wordSource: 'free' as const,
     };
     saveSettings(db, settings);
     expect(getSettings(db)).toEqual(settings);
@@ -616,6 +617,7 @@ describe('settings saved before languages existed', () => {
       level: 'JLPT N3',
       topics: ['travel'],
       questionCount: 20,
+      wordSource: 'jlpt',
     });
   });
 });

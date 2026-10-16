@@ -53,6 +53,7 @@ export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
   const [levelChoice, setLevelChoice] = useState<LevelChoice>('N2');
   const [topics, setTopics] = useState('');
   const [questionCount, setQuestionCount] = useState(15);
+  const [wordSource, setWordSource] = useState<'jlpt' | 'free'>('jlpt');
   const [loaded, setLoaded] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
 
@@ -85,6 +86,7 @@ export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
       setLevelChoice(levelChoiceOf(settings.level));
       setTopics(settings.topics.join(', '));
       setQuestionCount(settings.questionCount);
+      setWordSource(settings.wordSource);
       setLoaded(true);
     });
     return () => {
@@ -132,6 +134,7 @@ export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
         .map((topic) => topic.trim())
         .filter(Boolean),
       questionCount,
+      wordSource,
     });
     if (!parsed.success) {
       setStatus({ ok: false, error: null });
@@ -289,6 +292,29 @@ export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
             </span>
           </div>
         </div>
+
+        <label className="field">
+          <span className="field-label">{t('settings.wordSource')}</span>
+          <span className="select input-medium">
+            <select
+              value={levelChoice === 'custom' ? 'free' : wordSource}
+              disabled={levelChoice === 'custom'}
+              onChange={(e) => setWordSource(e.target.value as 'jlpt' | 'free')}
+            >
+              <option value="jlpt">
+                {t('settings.wordSourceJlpt', {
+                  level: levelChoice === 'custom' ? 'N?' : levelChoice,
+                })}
+              </option>
+              <option value="free">{t('settings.wordSourceFree')}</option>
+            </select>
+          </span>
+          <span className="field-hint">
+            {levelChoice === 'custom'
+              ? t('settings.wordSourceCustom')
+              : t('settings.wordSourceHint')}
+          </span>
+        </label>
 
         <label className="field">
           <span className="field-label">{t('settings.topics')}</span>

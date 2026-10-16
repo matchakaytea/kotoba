@@ -1034,3 +1034,85 @@ button.subtle-neutral:hover:not(:disabled) {
   background: var(--accent);
   color: var(--on-accent);
 }
+
+.level-cards {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.level-card {
+  display: grid;
+  gap: 0.4rem;
+  text-align: left;
+  padding: 0.75rem 0.9rem;
+  white-space: normal;
+}
+
+.level-card.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.level-name {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.level-bar {
+  display: flex;
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--border);
+}
+
+.level-bar-known {
+  background: var(--correct);
+}
+
+.level-bar-learning {
+  background: var(--accent);
+}
+
+.level-count {
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.word-filters {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.word-search {
+  flex: 1;
+}
+
+.word-note {
+  margin-left: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.tag.status-learning {
+  background: var(--accent-soft);
+  color: var(--nav-active-text, var(--accent));
+}
+
+.tag.status-known {
+  background: var(--correct-soft);
+  color: var(--correct);
+}
+
+.show-more {
+  justify-self: center;
+  align-self: center;
+}
+
+select:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

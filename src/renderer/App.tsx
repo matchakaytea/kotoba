@@ -6,6 +6,7 @@ import { I18nProvider } from './i18n/i18n';
 import { InboxPage } from './pages/InboxPage';
 import { LibraryPage } from './pages/LibraryPage';
 import { MistakesPage } from './pages/MistakesPage';
+import { WordsPage } from './pages/WordsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { TodayPage } from './pages/TodayPage';
 import { Sidebar, type Page } from './Sidebar';
@@ -90,6 +91,7 @@ export function App() {
                 }}
               />
             )}
+            {page === 'words' && <WordsPage />}
             {page === 'mistakes' && <MistakesPage />}
             {page === 'library' && <LibraryPage />}
             {page === 'inbox' && <InboxPage />}

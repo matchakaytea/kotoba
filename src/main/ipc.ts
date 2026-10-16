@@ -13,6 +13,7 @@ import {
   AttemptInput,
   LANGUAGES,
   Settings,
+  WordQuery,
   type ImportReport,
 } from '../shared/api';
 import { missingLanguages } from '../shared/localize';
@@ -34,6 +35,7 @@ import {
 } from './database';
 import { extractJson, findClaude, runClaude } from './generate';
 import { ensureInboxDirs, importInbox, type InboxDirs } from './inbox';
+import { jlptSummary, jlptWords } from './jlpt';
 import { localDay } from './scheduler';
 
 type Context = {
@@ -141,6 +143,11 @@ export function registerIpcHandlers({
     const type = extension === 'jpg' ? 'jpeg' : extension;
     return `data:image/${type};base64,${fs.readFileSync(file).toString('base64')}`;
   });
+
+  handle('jlpt:summary', () => jlptSummary(db));
+  handle('jlpt:words', (_event, payload) =>
+    jlptWords(db, WordQuery.parse(payload)),
+  );
 
   handle('claude:status', () => ({ found: findClaude() !== null }));
 

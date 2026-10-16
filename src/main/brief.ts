@@ -3,14 +3,31 @@ import { z } from 'zod';
 import { LANGUAGES, type Language } from '../shared/api';
 import { LangTest } from '../shared/test-schema';
 import { getBriefData, getSettings } from './database';
+import { jlptLevelOf, pickNewWords } from './jlpt';
 import { localDay } from './scheduler';
 
 const MAX_DUE_TARGETS = 40;
+const MIN_NEW_WORDS = 5;
 
-export function buildBrief(db: DatabaseSync, now = new Date()) {
+export function buildBrief(
+  db: DatabaseSync,
+  now = new Date(),
+  random = Math.random,
+) {
   const today = localDay(now);
   const { due, mistakes } = getBriefData(db, now);
   const settings = getSettings(db);
+  const jlptLevel =
+    settings.wordSource === 'jlpt' ? jlptLevelOf(settings.level) : null;
+  const dueCount = Math.min(due.length, MAX_DUE_TARGETS);
+  const newWords = jlptLevel
+    ? pickNewWords(
+        db,
+        jlptLevel,
+        Math.max(MIN_NEW_WORDS, settings.questionCount - dueCount),
+        random,
+      )
+    : [];
   return {
     format: 'kotoba-brief',
     format_version: 1,
@@ -37,7 +54,22 @@ export function buildBrief(db: DatabaseSync, now = new Date()) {
             : 'due',
     })),
     recent_mistakes: mistakes,
+    word_list: jlptLevel ? `JLPT N${jlptLevel}` : null,
+    new_words: newWords.map((word) => ({
+      expression: word.expression,
+      readings: word.readings,
+      meaning: word.meaning,
+      ...(word.note ? { note: word.note } : {}),
+    })),
   };
+}
+
+function newWordsRule(brief: ReturnType<typeof buildBrief>): string {
+  const topics = brief.learner.topics.join(', ');
+  if (brief.new_words.length === 0) {
+    return `- Fill the remaining questions with new, useful words for a learner ${brief.learner.level}, on these topics: ${topics}.`;
+  }
+  return `- Fill the remaining questions with the words in "new_words" (from the ${brief.word_list} vocabulary list), one question per word, in the order given. Use the topics (${topics}) as the theme of the prompts and example sentences. In "targets", use each word's "expression" exactly as written.`;
 }
 
 export function briefPrompt(brief: ReturnType<typeof buildBrief>): string {
@@ -49,7 +81,7 @@ Return ONLY one JSON object that matches the JSON Schema below. No explanation, 
 Rules:
 - Write about ${brief.question_count} questions using only these templates: ${brief.supported_templates.join(', ')}.
 - Cover every target in "due_targets" first, starting with overdue ones and recent mistakes. Test each one in a fresh way or a new context sentence, not word for word as before.
-- Fill the remaining questions with new, useful words for a learner ${brief.learner.level}, on these topics: ${brief.learner.topics.join(', ')}.
+${newWordsRule(brief)}
 - Every question lists its targets: { expression, reading, skill }. Use skill "reading" for reading questions and "meaning" for multiple-choice meaning questions.
 - reading: "prompt" is the word in kanji, "answers" lists every valid reading in hiragana only. Add a "context" sentence when the reading depends on it.
 - multiple_choice: 4 options, exactly one correct, no duplicates, plausible distractors.

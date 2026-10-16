@@ -102,6 +102,7 @@ export const Settings = z.strictObject({
   level: z.string().trim().min(1).max(100),
   topics: z.array(z.string().trim().min(1).max(50)).min(1).max(10),
   questionCount: z.number().int().min(5).max(40),
+  wordSource: z.enum(['jlpt', 'free']).default('jlpt'),
 });
 
 export type Settings = z.infer<typeof Settings>;
@@ -114,6 +115,7 @@ export const DEFAULT_SETTINGS: Settings = {
   level: 'around JLPT N2',
   topics: ['IT', 'software engineering', 'workplace'],
   questionCount: 15,
+  wordSource: 'jlpt',
 };
 
 export type Mistake = {
@@ -121,6 +123,43 @@ export type Mistake = {
   answer: string;
   question: Question | null;
   targets: string[];
+};
+
+export type WordStatus = 'new' | 'learning' | 'known';
+
+export type JlptLevelSummary = {
+  level: 1 | 2 | 3 | 4 | 5;
+  total: number;
+  learning: number;
+  known: number;
+};
+
+export const WordQuery = z.strictObject({
+  level: z.union([
+    z.literal(1),
+    z.literal(2),
+    z.literal(3),
+    z.literal(4),
+    z.literal(5),
+  ]),
+  status: z.enum(['new', 'learning', 'known']).optional(),
+  search: z.string().max(100).optional(),
+  offset: z.number().int().min(0),
+  limit: z.number().int().min(1).max(500),
+});
+
+export type WordQuery = z.infer<typeof WordQuery>;
+
+export type WordPage = {
+  total: number;
+  words: {
+    expression: string;
+    readings: string[];
+    meaning: string;
+    level: number;
+    note?: string;
+    status: WordStatus;
+  }[];
 };
 
 export type LibraryTest = {
@@ -150,4 +189,6 @@ export interface KotobaApi {
   getSettings(): Promise<Settings>;
   saveSettings(settings: Settings): Promise<Settings>;
   pickPicture(): Promise<string | null>;
+  getJlptSummary(): Promise<JlptLevelSummary[]>;
+  getJlptWords(query: WordQuery): Promise<WordPage>;
 }
