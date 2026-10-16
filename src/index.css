@@ -1116,3 +1116,61 @@ select:disabled {
   opacity: 0.6;
   cursor: default;
 }
+
+.vocab-row {
+  cursor: pointer;
+}
+
+.vocab-row:hover td {
+  background: var(--hover);
+}
+
+.pitch {
+  margin-left: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--accent);
+}
+
+.vocab-detail td {
+  background: var(--surface);
+  padding: 0.25rem 1rem 1rem;
+}
+
+.vocab-detail-body {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.vocab-note {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.vocab-example {
+  display: grid;
+  gap: 0.2rem;
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--accent-soft);
+}
+
+.vocab-sentence {
+  font-size: 1.05rem;
+}
+
+.vocab-sentence rt {
+  font-size: 0.55em;
+  color: var(--muted);
+}
+
+.vocab-sentence .target {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.word-filters {
+  flex-wrap: wrap;
+}
+
+.word-search {
+  min-width: 14rem;
+}

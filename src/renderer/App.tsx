@@ -7,6 +7,7 @@ import { InboxPage } from './pages/InboxPage';
 import { LibraryPage } from './pages/LibraryPage';
 import { MistakesPage } from './pages/MistakesPage';
 import { WordsPage } from './pages/WordsPage';
+import { VocabPage } from './pages/VocabPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { TodayPage } from './pages/TodayPage';
 import { Sidebar, type Page } from './Sidebar';
@@ -92,6 +93,7 @@ export function App() {
               />
             )}
             {page === 'words' && <WordsPage />}
+            {page === 'vocab' && <VocabPage />}
             {page === 'mistakes' && <MistakesPage />}
             {page === 'library' && <LibraryPage />}
             {page === 'inbox' && <InboxPage />}

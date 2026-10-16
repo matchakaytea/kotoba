@@ -13,6 +13,7 @@ import {
   AttemptInput,
   LANGUAGES,
   Settings,
+  VocabQuery,
   WordQuery,
   type ImportReport,
 } from '../shared/api';
@@ -36,6 +37,7 @@ import {
 import { extractJson, findClaude, runClaude } from './generate';
 import { ensureInboxDirs, importInbox, type InboxDirs } from './inbox';
 import { jlptSummary, jlptWords } from './jlpt';
+import { searchVocab } from './vocab';
 import { localDay } from './scheduler';
 
 type Context = {
@@ -145,6 +147,9 @@ export function registerIpcHandlers({
   });
 
   handle('jlpt:summary', () => jlptSummary(db));
+  handle('vocab:search', (_event, payload) =>
+    searchVocab(VocabQuery.parse(payload)),
+  );
   handle('jlpt:words', (_event, payload) =>
     jlptWords(db, WordQuery.parse(payload)),
   );

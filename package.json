@@ -20,7 +20,8 @@
     "lint:fix": "oxlint --fix && oxfmt --write",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
-    "build:jlpt": "node scripts/build-jlpt.mts"
+    "build:jlpt": "node scripts/build-jlpt.mts",
+    "build:vocab": "node scripts/build-vocab.mts"
   },
   "devDependencies": {
     "@electron-forge/cli": "^8.0.1",

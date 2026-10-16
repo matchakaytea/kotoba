@@ -191,4 +191,51 @@ export interface KotobaApi {
   pickPicture(): Promise<string | null>;
   getJlptSummary(): Promise<JlptLevelSummary[]>;
   getJlptWords(query: WordQuery): Promise<WordPage>;
+  searchVocab(query: VocabQuery): Promise<VocabPage>;
 }
+
+export type VocabTier = 'high' | 'mid' | 'low';
+
+export type VocabExample = {
+  kind: 'sentence' | 'related' | 'opposite';
+  text: string;
+  furigana: string;
+  sc: string;
+  tc: string;
+};
+
+export type VocabEntry = {
+  id: string;
+  expression: string;
+  reading: string;
+  pitch: string;
+  partOfSpeech: string;
+  meaningSc: string;
+  meaningTc: string;
+  level: 1 | 2 | 3 | 4 | 5;
+  tier?: VocabTier;
+  sort: number;
+  note?: string;
+  origin?: string;
+  examples: VocabExample[];
+};
+
+export const VocabQuery = z.strictObject({
+  level: z
+    .union([
+      z.literal(1),
+      z.literal(2),
+      z.literal(3),
+      z.literal(4),
+      z.literal(5),
+    ])
+    .optional(),
+  tier: z.enum(['high', 'mid', 'low']).optional(),
+  search: z.string().max(100).optional(),
+  offset: z.number().int().min(0),
+  limit: z.number().int().min(1).max(200),
+});
+
+export type VocabQuery = z.infer<typeof VocabQuery>;
+
+export type VocabPage = { total: number; entries: VocabEntry[] };

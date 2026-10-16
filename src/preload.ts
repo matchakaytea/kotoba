@@ -21,6 +21,7 @@ const api: KotobaApi = {
   pickPicture: () => ipcRenderer.invoke('picture:pick'),
   getJlptSummary: () => ipcRenderer.invoke('jlpt:summary'),
   getJlptWords: (query) => ipcRenderer.invoke('jlpt:words', query),
+  searchVocab: (query) => ipcRenderer.invoke('vocab:search', query),
 };
 
 contextBridge.exposeInMainWorld('kotoba', api);
