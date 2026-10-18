@@ -55,3 +55,10 @@ create policy "own tests" on public.kotoba_tests for all to authenticated
 drop policy if exists "own settings" on public.kotoba_settings;
 create policy "own settings" on public.kotoba_settings for all to authenticated
   using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- Let signed-in users reach the tables through the API (the policies above
+-- still limit them to their own rows). Needed when new tables are not
+-- exposed automatically.
+grant select, insert, update, delete on public.kotoba_attempts to authenticated;
+grant select, insert, update, delete on public.kotoba_tests to authenticated;
+grant select, insert, update, delete on public.kotoba_settings to authenticated;
