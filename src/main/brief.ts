@@ -3,8 +3,9 @@ import { z } from 'zod';
 import { LANGUAGES, type Language } from '../shared/api';
 import { LangTest } from '../shared/test-schema';
 import { getBriefData, getSettings } from './database';
-import { jlptLevelOf, pickNewWords } from './jlpt';
+import { levelOf, pickNewWords } from './vocab';
 import { localDay } from './scheduler';
+import { plainExpression } from './vocab/merge';
 
 const MAX_DUE_TARGETS = 40;
 const MIN_NEW_WORDS = 5;
@@ -18,7 +19,7 @@ export function buildBrief(
   const { due, mistakes } = getBriefData(db, now);
   const settings = getSettings(db);
   const jlptLevel =
-    settings.wordSource === 'jlpt' ? jlptLevelOf(settings.level) : null;
+    settings.wordSource === 'jlpt' ? levelOf(settings.level) : null;
   const dueCount = Math.min(due.length, MAX_DUE_TARGETS);
   const newWords = jlptLevel
     ? pickNewWords(
@@ -56,9 +57,9 @@ export function buildBrief(
     recent_mistakes: mistakes,
     word_list: jlptLevel ? `JLPT N${jlptLevel}` : null,
     new_words: newWords.map((word) => ({
-      expression: word.expression,
-      readings: word.readings,
-      meaning: word.meaning,
+      expression: plainExpression(word.expression),
+      readings: word.reading.split('、'),
+      meaning: word.meaningEn,
       ...(word.note ? { note: word.note } : {}),
     })),
   };

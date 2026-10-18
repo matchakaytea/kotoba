@@ -14,7 +14,6 @@ import {
   LANGUAGES,
   Settings,
   VocabQuery,
-  WordQuery,
   type ImportReport,
 } from '../shared/api';
 import { missingLanguages } from '../shared/localize';
@@ -36,8 +35,7 @@ import {
 } from './database';
 import { extractJson, findClaude, runClaude } from './generate';
 import { ensureInboxDirs, importInbox, type InboxDirs } from './inbox';
-import { jlptSummary, jlptWords } from './jlpt';
-import { searchVocab } from './vocab';
+import { searchVocab, vocabSummary, wordStatuses } from './vocab';
 import { localDay } from './scheduler';
 
 type Context = {
@@ -146,12 +144,9 @@ export function registerIpcHandlers({
     return `data:image/${type};base64,${fs.readFileSync(file).toString('base64')}`;
   });
 
-  handle('jlpt:summary', () => jlptSummary(db));
+  handle('vocab:summary', () => vocabSummary(wordStatuses(db)));
   handle('vocab:search', (_event, payload) =>
-    searchVocab(VocabQuery.parse(payload)),
-  );
-  handle('jlpt:words', (_event, payload) =>
-    jlptWords(db, WordQuery.parse(payload)),
+    searchVocab(VocabQuery.parse(payload), wordStatuses(db)),
   );
 
   handle('claude:status', () => ({ found: findClaude() !== null }));

@@ -1,8 +1,10 @@
 import { Fragment, useEffect, useState } from 'react';
 import type {
   VocabEntry,
+  VocabLevelSummary,
   VocabPage as Page,
   VocabQuery,
+  WordStatus,
 } from '../../shared/api';
 import { parseFurigana } from '../../shared/furigana';
 import type { Language } from '../../shared/languages';
@@ -10,7 +12,12 @@ import { useI18n } from '../i18n/i18n';
 
 const PAGE_SIZE = 100;
 type Level = NonNullable<VocabQuery['level']>;
-const LEVELS: (Level | undefined)[] = [undefined, 5, 4, 3, 2, 1];
+const STATUSES: (WordStatus | undefined)[] = [
+  undefined,
+  'new',
+  'learning',
+  'known',
+];
 const TIERS: (VocabQuery['tier'] | undefined)[] = [
   undefined,
   'high',
@@ -43,10 +50,16 @@ export function VocabPage() {
   const meaning = meaningFor(language);
   const [level, setLevel] = useState<Level | undefined>(undefined);
   const [tier, setTier] = useState<VocabQuery['tier']>(undefined);
+  const [status, setStatus] = useState<WordStatus | undefined>(undefined);
+  const [summary, setSummary] = useState<VocabLevelSummary[] | null>(null);
   const [search, setSearch] = useState('');
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [page, setPage] = useState<Page | null>(null);
   const [open, setOpen] = useState<string | null>(null);
+
+  useEffect(() => {
+    window.kotoba.getVocabSummary().then(setSummary);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -54,6 +67,7 @@ export function VocabPage() {
       .searchVocab({
         level,
         tier,
+        status,
         search: search || undefined,
         offset: 0,
         limit,
@@ -64,7 +78,7 @@ export function VocabPage() {
     return () => {
       active = false;
     };
-  }, [level, tier, search, limit]);
+  }, [level, tier, status, search, limit]);
 
   function reset(next: () => void) {
     next();
@@ -81,16 +95,62 @@ export function VocabPage() {
         </div>
       </header>
 
+      {summary && (
+        <div className="level-cards">
+          {summary.map((item) => (
+            <button
+              key={item.level}
+              className={
+                item.level === level ? 'level-card active' : 'level-card'
+              }
+              aria-pressed={item.level === level}
+              onClick={() =>
+                reset(() =>
+                  setLevel(item.level === level ? undefined : item.level),
+                )
+              }
+            >
+              <span className="level-name">N{item.level}</span>
+              <span className="level-bar" aria-hidden="true">
+                <span
+                  className="level-bar-known"
+                  style={{ width: `${(item.known / item.total) * 100}%` }}
+                />
+                <span
+                  className="level-bar-learning"
+                  style={{ width: `${(item.learning / item.total) * 100}%` }}
+                />
+              </span>
+              <span className="level-count">
+                {item.known + item.learning} / {item.total}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {summary
+        ?.filter((item) => item.level === level)
+        .map((item) => (
+          <p key={item.level} className="page-sub">
+            {t('words.progress', {
+              known: item.known,
+              learning: item.learning,
+              total: item.total,
+            })}
+          </p>
+        ))}
+
       <div className="word-filters">
         <span className="segmented">
-          {LEVELS.map((option) => (
+          {STATUSES.map((option) => (
             <button
               key={option ?? 'all'}
-              className={option === level ? 'active' : ''}
-              aria-pressed={option === level}
-              onClick={() => reset(() => setLevel(option))}
+              className={option === status ? 'active' : ''}
+              aria-pressed={option === status}
+              onClick={() => reset(() => setStatus(option))}
             >
-              {option ? `N${option}` : t('words.all')}
+              {t(option ? `words.${option}` : 'words.all')}
             </button>
           ))}
         </span>
@@ -125,6 +185,7 @@ export function VocabPage() {
               <th>{t('words.reading')}</th>
               <th>{t('vocab.pos')}</th>
               <th>{t('vocab.meaning')}</th>
+              <th>{t('words.status')}</th>
             </tr>
           </thead>
           <tbody>
@@ -147,10 +208,15 @@ export function VocabPage() {
                   </td>
                   <td className="cell-muted">{entry.partOfSpeech}</td>
                   <td>{meaningText(entry, meaning)}</td>
+                  <td>
+                    <span className={`tag status-${entry.status}`}>
+                      {t(`words.${entry.status}`)}
+                    </span>
+                  </td>
                 </tr>
                 {open === entry.id && (
                   <tr className="vocab-detail">
-                    <td colSpan={4}>
+                    <td colSpan={5}>
                       <VocabDetail entry={entry} meaning={meaning} />
                     </td>
                   </tr>
@@ -182,6 +248,7 @@ function VocabDetail({
   entry: VocabEntry;
   meaning: Meaning;
 }) {
+  const { t } = useI18n();
   // The other definitions, skipping any that read the same as one already
   // shown (Simplified and Traditional are often identical).
   const seen = new Set([meaningText(entry, meaning)]);
@@ -194,6 +261,11 @@ function VocabDetail({
   return (
     <div className="vocab-detail-body">
       {entry.note && <p className="vocab-note">{entry.note}</p>}
+      {entry.spellings && (
+        <p className="cell-muted" lang="ja">
+          {t('vocab.spellings')}：{entry.spellings.join('、')}
+        </p>
+      )}
       {others.map((other) => (
         <p key={other.meaning} className="cell-muted">
           {other.label}：{meaningText(entry, other.meaning)}

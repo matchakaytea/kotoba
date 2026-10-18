@@ -127,39 +127,11 @@ export type Mistake = {
 
 export type WordStatus = 'new' | 'learning' | 'known';
 
-export type JlptLevelSummary = {
+export type VocabLevelSummary = {
   level: 1 | 2 | 3 | 4 | 5;
   total: number;
   learning: number;
   known: number;
-};
-
-export const WordQuery = z.strictObject({
-  level: z.union([
-    z.literal(1),
-    z.literal(2),
-    z.literal(3),
-    z.literal(4),
-    z.literal(5),
-  ]),
-  status: z.enum(['new', 'learning', 'known']).optional(),
-  search: z.string().max(100).optional(),
-  offset: z.number().int().min(0),
-  limit: z.number().int().min(1).max(500),
-});
-
-export type WordQuery = z.infer<typeof WordQuery>;
-
-export type WordPage = {
-  total: number;
-  words: {
-    expression: string;
-    readings: string[];
-    meaning: string;
-    level: number;
-    note?: string;
-    status: WordStatus;
-  }[];
 };
 
 export type LibraryTest = {
@@ -189,8 +161,7 @@ export interface KotobaApi {
   getSettings(): Promise<Settings>;
   saveSettings(settings: Settings): Promise<Settings>;
   pickPicture(): Promise<string | null>;
-  getJlptSummary(): Promise<JlptLevelSummary[]>;
-  getJlptWords(query: WordQuery): Promise<WordPage>;
+  getVocabSummary(): Promise<VocabLevelSummary[]>;
   searchVocab(query: VocabQuery): Promise<VocabPage>;
 }
 
@@ -218,6 +189,10 @@ export type VocabEntry = {
   sort: number;
   note?: string;
   origin?: string;
+  /** Other ways the word is written (美味しい for おいしい). */
+  spellings?: string[];
+  /** Set on words that come only from the JLPT word list, not the deck. */
+  source?: 'jlpt';
   examples: VocabExample[];
 };
 
@@ -232,6 +207,7 @@ export const VocabQuery = z.strictObject({
     ])
     .optional(),
   tier: z.enum(['high', 'mid', 'low']).optional(),
+  status: z.enum(['new', 'learning', 'known']).optional(),
   search: z.string().max(100).optional(),
   offset: z.number().int().min(0),
   limit: z.number().int().min(1).max(200),
@@ -239,4 +215,6 @@ export const VocabQuery = z.strictObject({
 
 export type VocabQuery = z.infer<typeof VocabQuery>;
 
-export type VocabPage = { total: number; entries: VocabEntry[] };
+export type VocabRow = VocabEntry & { status: WordStatus };
+
+export type VocabPage = { total: number; entries: VocabRow[] };

@@ -3,7 +3,6 @@ import type { MessageKey } from './i18n/messages';
 
 export type Page =
   | 'today'
-  | 'words'
   | 'vocab'
   | 'mistakes'
   | 'library'
@@ -14,7 +13,6 @@ type NavEntry = { page: Page; label: MessageKey; japanese: string };
 
 const PAGES: NavEntry[] = [
   { page: 'today', label: 'nav.today', japanese: '今日' },
-  { page: 'words', label: 'nav.words', japanese: '単語' },
   { page: 'vocab', label: 'nav.vocab', japanese: '語彙' },
   { page: 'mistakes', label: 'nav.mistakes', japanese: '間違い' },
   { page: 'library', label: 'nav.library', japanese: '問題集' },
