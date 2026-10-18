@@ -377,6 +377,7 @@ input {
 
 .tag {
   font-size: 0.75rem;
+  white-space: nowrap;
   padding: 0.1rem 0.5rem;
   border-radius: 999px;
   background: var(--hover);
@@ -1223,13 +1224,19 @@ select:disabled {
   opacity: var(--backdrop-dim);
 }
 
+/* Fades out towards the top and left so any picture blends into the page. */
 .skin-backdrop-corner {
-  inset: auto 24px 24px auto;
-  width: min(30vw, 320px);
-  height: min(30vw, 320px);
+  inset: auto 0 0 auto;
+  width: min(42vw, 520px);
+  height: min(42vw, 520px);
   background-size: contain;
   background-position: bottom right;
   opacity: calc(1 - var(--backdrop-dim) * 0.8);
+  mask-image: radial-gradient(
+    ellipse 100% 100% at 100% 100%,
+    #000 45%,
+    transparent 100%
+  );
 }
 
 .shell,

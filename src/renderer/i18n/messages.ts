@@ -130,7 +130,7 @@ const en = {
   'settings.themeCustom': 'Custom (from a picture)',
   'custom.choose': 'Choose picture…',
   'custom.hint':
-    'Kotoba builds a colour palette from the picture. Only the colours are saved, not the picture.',
+    'Kotoba builds a colour palette from the picture. The picture is kept in your data folder, so it can also be shown behind the app.',
   'custom.background': 'Background colour',
   'custom.accent': 'Accent colour',
   'custom.mode': 'Brightness',
@@ -346,7 +346,8 @@ const zhHans: Messages = {
   'settings.themeDefault': '默认（跟随 Windows）',
   'settings.themeCustom': '自定义（来自图片）',
   'custom.choose': '选择图片…',
-  'custom.hint': 'Kotoba 会根据图片生成一套配色。只保存颜色，不保存图片本身。',
+  'custom.hint':
+    'Kotoba 会根据图片生成一套配色。图片会保存在数据文件夹里，也可以显示在应用背后。',
   'custom.background': '背景色',
   'custom.accent': '强调色',
   'custom.mode': '明暗',
@@ -542,7 +543,8 @@ const zhHant: Messages = {
   'settings.themeDefault': '預設（跟隨 Windows）',
   'settings.themeCustom': '自訂（來自圖片）',
   'custom.choose': '選擇圖片…',
-  'custom.hint': 'Kotoba 會根據圖片產生一套配色。只儲存顏色，不儲存圖片本身。',
+  'custom.hint':
+    'Kotoba 會根據圖片產生一套配色。圖片會儲存在資料夾裡，也可以顯示在應用程式背後。',
   'custom.background': '背景色',
   'custom.accent': '強調色',
   'custom.mode': '明暗',
@@ -742,7 +744,7 @@ const ko: Messages = {
   'settings.themeCustom': '사용자 지정 (사진에서)',
   'custom.choose': '사진 선택…',
   'custom.hint':
-    'Kotoba가 사진에서 색상 팔레트를 만듭니다. 사진은 저장되지 않고 색상만 저장됩니다.',
+    'Kotoba가 사진에서 색상 팔레트를 만듭니다. 사진은 데이터 폴더에 저장되어 앱 뒤에 표시할 수도 있습니다.',
   'custom.background': '배경색',
   'custom.accent': '강조색',
   'custom.mode': '밝기',
