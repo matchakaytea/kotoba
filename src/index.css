@@ -1244,3 +1244,9 @@ select:disabled {
   position: relative;
   z-index: 1;
 }
+
+/* With the picture as background, the sidebar lets it show through softly. */
+.skin-backdrop-fill ~ .shell .sidebar {
+  background: color-mix(in srgb, var(--sidebar) 72%, transparent);
+  backdrop-filter: blur(8px);
+}
