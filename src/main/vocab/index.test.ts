@@ -19,6 +19,13 @@ describe('searchVocab on the real deck', () => {
     const page = searchVocab({ search: '高中', offset: 0, limit: 50 });
     expect(page.entries.map((e) => e.expression)).toContain('高校');
   });
+  it('has an English meaning for every entry', () => {
+    expect(VOCAB.filter((e) => !e.meaningEn)).toEqual([]);
+  });
+  it('finds a word by its English meaning, ignoring case', () => {
+    const page = searchVocab({ search: 'High School', offset: 0, limit: 50 });
+    expect(page.entries.map((e) => e.expression)).toContain('高校');
+  });
   it('finds a word by its reading and pages the results', () => {
     expect(
       searchVocab({ search: 'こうこう', offset: 0, limit: 50 }).entries[0]

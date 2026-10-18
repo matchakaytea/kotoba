@@ -19,3 +19,8 @@ Changes made for Kotoba, by `npm run build:vocab` into
   `kilogram`); it is kept as an origin note and the word itself is used as the
   reading.
 - HTML tags removed from meanings.
+- Traditional Chinese meanings and example translations reworded where the
+  deck used mainland terms, so they read the way people in Taiwan say them
+  (for example 自行車 → 腳踏車, 空調 → 冷氣, 工資 → 薪資). The rules are in
+  `src/main/vocab/taiwan.ts`.
+- English meanings added; see `../english`.

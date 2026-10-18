@@ -5,6 +5,7 @@ import type {
   VocabQuery,
 } from '../../shared/api';
 import { parseFurigana } from '../../shared/furigana';
+import type { Language } from '../../shared/languages';
 import { useI18n } from '../i18n/i18n';
 
 const PAGE_SIZE = 100;
@@ -17,9 +18,29 @@ const TIERS: (VocabQuery['tier'] | undefined)[] = [
   'low',
 ];
 
+type Meaning = 'en' | 'sc' | 'tc';
+
+// Definitions come in English, Simplified and Traditional Chinese; Korean
+// falls back to Simplified Chinese.
+function meaningFor(language: Language): Meaning {
+  if (language === 'en') return 'en';
+  return language === 'zh-Hant' ? 'tc' : 'sc';
+}
+
+function meaningText(entry: VocabEntry, meaning: Meaning): string {
+  if (meaning === 'en') return entry.meaningEn;
+  return meaning === 'tc' ? entry.meaningTc : entry.meaningSc;
+}
+
+const OTHER_MEANINGS: { meaning: Meaning; label: string }[] = [
+  { meaning: 'en', label: 'English' },
+  { meaning: 'sc', label: '简体' },
+  { meaning: 'tc', label: '繁體' },
+];
+
 export function VocabPage() {
   const { t, language } = useI18n();
-  const traditional = language === 'zh-Hant';
+  const meaning = meaningFor(language);
   const [level, setLevel] = useState<Level | undefined>(undefined);
   const [tier, setTier] = useState<VocabQuery['tier']>(undefined);
   const [search, setSearch] = useState('');
@@ -125,12 +146,12 @@ export function VocabPage() {
                     )}
                   </td>
                   <td className="cell-muted">{entry.partOfSpeech}</td>
-                  <td>{traditional ? entry.meaningTc : entry.meaningSc}</td>
+                  <td>{meaningText(entry, meaning)}</td>
                 </tr>
                 {open === entry.id && (
                   <tr className="vocab-detail">
                     <td colSpan={4}>
-                      <VocabDetail entry={entry} traditional={traditional} />
+                      <VocabDetail entry={entry} meaning={meaning} />
                     </td>
                   </tr>
                 )}
@@ -156,17 +177,28 @@ export function VocabPage() {
 
 function VocabDetail({
   entry,
-  traditional,
+  meaning,
 }: {
   entry: VocabEntry;
-  traditional: boolean;
+  meaning: Meaning;
 }) {
+  // The other definitions, skipping any that read the same as one already
+  // shown (Simplified and Traditional are often identical).
+  const seen = new Set([meaningText(entry, meaning)]);
+  const others = OTHER_MEANINGS.filter((other) => {
+    const text = meaningText(entry, other.meaning);
+    if (seen.has(text)) return false;
+    seen.add(text);
+    return true;
+  });
   return (
     <div className="vocab-detail-body">
       {entry.note && <p className="vocab-note">{entry.note}</p>}
-      {!traditional && entry.meaningTc !== entry.meaningSc && (
-        <p className="cell-muted">繁體：{entry.meaningTc}</p>
-      )}
+      {others.map((other) => (
+        <p key={other.meaning} className="cell-muted">
+          {other.label}：{meaningText(entry, other.meaning)}
+        </p>
+      ))}
       {entry.examples.map((example, i) => (
         <div key={i} className="vocab-example">
           <p lang="ja" className="vocab-sentence">
@@ -183,7 +215,9 @@ function VocabDetail({
               ),
             )}
           </p>
-          <p className="cell-muted">{traditional ? example.tc : example.sc}</p>
+          <p className="cell-muted">
+            {meaning === 'tc' ? example.tc : example.sc}
+          </p>
         </div>
       ))}
     </div>

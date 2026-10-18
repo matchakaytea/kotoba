@@ -12,7 +12,8 @@ function matches(entry: VocabEntry, query: VocabQuery): boolean {
     entry.expression.includes(needle) ||
     entry.reading.includes(needle) ||
     entry.meaningSc.includes(needle) ||
-    entry.meaningTc.includes(needle)
+    entry.meaningTc.includes(needle) ||
+    entry.meaningEn.toLowerCase().includes(needle)
   );
 }
 

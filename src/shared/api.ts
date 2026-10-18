@@ -212,6 +212,7 @@ export type VocabEntry = {
   partOfSpeech: string;
   meaningSc: string;
   meaningTc: string;
+  meaningEn: string;
   level: 1 | 2 | 3 | 4 | 5;
   tier?: VocabTier;
   sort: number;

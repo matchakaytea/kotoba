@@ -1,5 +1,8 @@
 import type { VocabEntry, VocabTier } from '../../shared/api';
 
+/** A deck entry before English meanings are added. */
+export type DeckEntry = Omit<VocabEntry, 'meaningEn'>;
+
 const FIELDS = [
   'Notetype',
   'Deck',
@@ -34,7 +37,7 @@ function stripHtml(text: string): string {
   return text.replace(/<[^>]+>/g, '').trim();
 }
 
-export function parseRow(line: string): VocabEntry | null {
+export function parseRow(line: string): DeckEntry | null {
   const cells = line.split('\t');
   const field = (name: (typeof FIELDS)[number]) =>
     (cells[FIELDS.indexOf(name)] ?? '').trim();
@@ -88,11 +91,11 @@ export function parseRow(line: string): VocabEntry | null {
   };
 }
 
-export function parseNotes(text: string): VocabEntry[] {
+export function parseNotes(text: string): DeckEntry[] {
   return text
     .split(/\r?\n/)
     .filter((line) => line && !line.startsWith('#'))
     .map(parseRow)
-    .filter((entry): entry is VocabEntry => entry !== null)
+    .filter((entry): entry is DeckEntry => entry !== null)
     .sort((a, b) => b.level - a.level || a.sort - b.sort);
 }
