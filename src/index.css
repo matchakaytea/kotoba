@@ -1200,3 +1200,40 @@ select:disabled {
 .data-panel .confirm {
   margin-top: 12px;
 }
+
+/* Custom skin picture behind the app */
+.skin-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-repeat: no-repeat;
+}
+
+.skin-backdrop-fill {
+  background-size: cover;
+  background-position: center;
+}
+
+.skin-backdrop-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+  opacity: var(--backdrop-dim);
+}
+
+.skin-backdrop-corner {
+  inset: auto 24px 24px auto;
+  width: min(30vw, 320px);
+  height: min(30vw, 320px);
+  background-size: contain;
+  background-position: bottom right;
+  opacity: calc(1 - var(--backdrop-dim) * 0.8);
+}
+
+.shell,
+.review {
+  position: relative;
+  z-index: 1;
+}

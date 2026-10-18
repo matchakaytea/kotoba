@@ -96,10 +96,21 @@ export const THEMES: { code: Theme; name: string }[] = [
   { code: 'custom', name: '' },
 ];
 
+/** How the custom skin's picture is shown behind the app. */
+export const Backdrop = z.strictObject({
+  mode: z.enum(['off', 'fill', 'corner']),
+  dim: z.number().int().min(0).max(95),
+});
+
+export type Backdrop = z.infer<typeof Backdrop>;
+
+export const DEFAULT_BACKDROP: Backdrop = { mode: 'off', dim: 80 };
+
 export const Settings = z.strictObject({
   language: Language.default('en'),
   theme: Theme.default('default'),
   customColors: CustomColors.optional(),
+  backdrop: Backdrop.optional(),
   targetLanguage: TargetLanguage.default('ja'),
   level: z.string().trim().min(1).max(100),
   topics: z.array(z.string().trim().min(1).max(50)).min(1).max(10),
@@ -167,6 +178,8 @@ export interface KotobaApi {
   getSettings(): Promise<Settings>;
   saveSettings(settings: Settings): Promise<Settings>;
   pickPicture(): Promise<string | null>;
+  saveSkinPicture(dataUrl: string): Promise<void>;
+  getSkinPicture(): Promise<string | null>;
   getVocabSummary(): Promise<VocabLevelSummary[]>;
   searchVocab(query: VocabQuery): Promise<VocabPage>;
   getOtherWords(): Promise<OtherWord[]>;

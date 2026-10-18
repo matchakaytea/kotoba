@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import {
+  DEFAULT_BACKDROP,
   LANGUAGES,
   Settings,
   TARGET_LANGUAGES,
   THEMES,
+  type Backdrop,
   type Language,
   type Theme,
 } from '../../shared/api';
@@ -37,7 +39,12 @@ const NATIVE_NAMES: Record<(typeof TARGET_LANGUAGES)[number]['code'], string> =
 
 type Props = {
   onLanguageChange: (language: Language) => void;
-  onThemeChange: (theme: Theme, colors?: CustomColors) => void;
+  onThemeChange: (
+    theme: Theme,
+    colors?: CustomColors,
+    backdrop?: Backdrop,
+    picture?: string | null,
+  ) => void;
 };
 
 export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
@@ -50,6 +57,10 @@ export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
   const [savedColors, setSavedColors] = useState<CustomColors | undefined>();
   const [swatches, setSwatches] = useState<Swatch[]>([]);
   const [picture, setPicture] = useState<string | null>(null);
+  const [savedPicture, setSavedPicture] = useState<string | null>(null);
+  const [backdrop, setBackdrop] = useState<Backdrop>(DEFAULT_BACKDROP);
+  const [savedBackdrop, setSavedBackdrop] =
+    useState<Backdrop>(DEFAULT_BACKDROP);
   const [level, setLevel] = useState('');
   const [levelChoice, setLevelChoice] = useState<LevelChoice>('N2');
   const [topics, setTopics] = useState('');
@@ -62,11 +73,15 @@ export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
     language: savedLanguage,
     theme: savedTheme,
     colors: savedColors,
+    backdrop: savedBackdrop,
+    picture: savedPicture,
   });
   savedRef.current = {
     language: savedLanguage,
     theme: savedTheme,
     colors: savedColors,
+    backdrop: savedBackdrop,
+    picture: savedPicture,
   };
 
   useEffect(() => {
@@ -83,6 +98,8 @@ export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
           { hex: settings.customColors.accent, share: 0 },
         ]);
       }
+      setBackdrop(settings.backdrop ?? DEFAULT_BACKDROP);
+      setSavedBackdrop(settings.backdrop ?? DEFAULT_BACKDROP);
       setLevel(settings.level);
       setLevelChoice(levelChoiceOf(settings.level));
       setTopics(settings.topics.join(', '));
@@ -90,9 +107,14 @@ export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
       setWordSource(settings.wordSource);
       setLoaded(true);
     });
+    window.kotoba.getSkinPicture().then((saved) => {
+      setPicture(saved);
+      setSavedPicture(saved);
+    });
     return () => {
-      onLanguageChange(savedRef.current.language);
-      onThemeChange(savedRef.current.theme, savedRef.current.colors);
+      const saved = savedRef.current;
+      onLanguageChange(saved.language);
+      onThemeChange(saved.theme, saved.colors, saved.backdrop, saved.picture);
     };
   }, [onLanguageChange, onThemeChange]);
 
@@ -101,16 +123,22 @@ export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
     onLanguageChange(next);
   }
 
-  function previewTheme(next: Theme, nextColors = colors) {
+  function previewTheme(
+    next: Theme,
+    nextColors = colors,
+    nextBackdrop = backdrop,
+    nextPicture = picture,
+  ) {
     setTheme(next);
     setColors(nextColors);
-    onThemeChange(next, nextColors);
+    setBackdrop(nextBackdrop);
+    setPicture(nextPicture);
+    onThemeChange(next, nextColors, nextBackdrop, nextPicture);
   }
 
   function applySwatches(found: Swatch[], dataUrl: string) {
-    setPicture(dataUrl);
     setSwatches(found);
-    previewTheme('custom', suggestColors(found));
+    previewTheme('custom', suggestColors(found), backdrop, dataUrl);
   }
 
   function chooseLevel(choice: LevelChoice) {
@@ -128,6 +156,7 @@ export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
       language,
       theme,
       ...(colors ? { customColors: colors } : {}),
+      backdrop,
       targetLanguage: 'ja',
       level,
       topics: topics
@@ -146,12 +175,17 @@ export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
       return;
     }
     try {
+      if (picture && picture !== savedPicture) {
+        await window.kotoba.saveSkinPicture(picture);
+        setSavedPicture(picture);
+      }
       const saved = await window.kotoba.saveSettings(parsed.data);
       setSavedLanguage(saved.language);
       setSavedTheme(saved.theme);
       setSavedColors(saved.customColors);
+      setSavedBackdrop(saved.backdrop ?? DEFAULT_BACKDROP);
       onLanguageChange(saved.language);
-      onThemeChange(saved.theme, saved.customColors);
+      onThemeChange(saved.theme, saved.customColors, saved.backdrop, picture);
       setStatus({ ok: true });
     } catch (e) {
       setStatus({ ok: false, error: cleanError(e) });
@@ -216,7 +250,9 @@ export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
             </span>
             <span className="field-hint">
               {theme !== savedTheme ||
-              JSON.stringify(colors) !== JSON.stringify(savedColors)
+              JSON.stringify(colors) !== JSON.stringify(savedColors) ||
+              JSON.stringify(backdrop) !== JSON.stringify(savedBackdrop) ||
+              picture !== savedPicture
                 ? t('settings.themeUnsaved')
                 : t('settings.themeHint')}
             </span>
@@ -230,6 +266,10 @@ export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
             picture={picture}
             onPicture={applySwatches}
             onChange={(next) => previewTheme('custom', next)}
+            backdrop={backdrop}
+            onBackdropChange={(next) =>
+              previewTheme('custom', colors, next, picture)
+            }
           />
         )}
 

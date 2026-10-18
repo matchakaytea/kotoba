@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { Backdrop } from '../shared/api';
 import type { CustomColors, Swatch, ThemeMode } from '../shared/palette';
 import { cleanError } from './format';
 import { useI18n } from './i18n/i18n';
@@ -10,7 +11,11 @@ type Props = {
   picture: string | null;
   onPicture: (swatches: Swatch[], dataUrl: string) => void;
   onChange: (colors: CustomColors) => void;
+  backdrop: Backdrop;
+  onBackdropChange: (backdrop: Backdrop) => void;
 };
+
+const BACKDROP_MODES: Backdrop['mode'][] = ['off', 'fill', 'corner'];
 
 export function CustomSkinPanel({
   colors,
@@ -18,6 +23,8 @@ export function CustomSkinPanel({
   picture,
   onPicture,
   onChange,
+  backdrop,
+  onBackdropChange,
 }: Props) {
   const { t } = useI18n();
   const [error, setError] = useState<string | null>(null);
@@ -89,6 +96,42 @@ export function CustomSkinPanel({
               ))}
             </span>
           </div>
+        </>
+      )}
+
+      {picture && colors && (
+        <>
+          <div className="swatch-row">
+            <span className="field-label">{t('custom.backdrop')}</span>
+            <span className="segmented">
+              {BACKDROP_MODES.map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  className={backdrop.mode === mode ? 'active' : ''}
+                  aria-pressed={backdrop.mode === mode}
+                  onClick={() => onBackdropChange({ ...backdrop, mode })}
+                >
+                  {t(`custom.backdrop.${mode}`)}
+                </button>
+              ))}
+            </span>
+          </div>
+          {backdrop.mode !== 'off' && (
+            <label className="swatch-row">
+              <span className="field-label">{t('custom.fade')}</span>
+              <input
+                type="range"
+                min={0}
+                max={95}
+                step={5}
+                value={backdrop.dim}
+                onChange={(e) =>
+                  onBackdropChange({ ...backdrop, dim: Number(e.target.value) })
+                }
+              />
+            </label>
+          )}
         </>
       )}
     </div>

@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { ImportReport, Language, Session, Theme } from '../shared/api';
+import type {
+  Backdrop,
+  ImportReport,
+  Language,
+  Session,
+  Theme,
+} from '../shared/api';
 import type { CustomColors } from '../shared/palette';
 import { cleanError } from './format';
 import { I18nProvider } from './i18n/i18n';
@@ -11,13 +17,19 @@ import { SettingsPage } from './pages/SettingsPage';
 import { TodayPage } from './pages/TodayPage';
 import { Sidebar, type Page } from './Sidebar';
 import { TestRunner } from './TestRunner';
+import { SkinBackdrop } from './SkinBackdrop';
 import { applyTheme } from './theme';
+
+type Skin = {
+  theme: Theme;
+  colors?: CustomColors;
+  backdrop?: Backdrop;
+  picture?: string | null;
+};
 
 export function App() {
   const [language, setLanguage] = useState<Language | null>(null);
-  const [skin, setSkin] = useState<{ theme: Theme; colors?: CustomColors }>({
-    theme: 'default',
-  });
+  const [skin, setSkin] = useState<Skin>({ theme: 'default' });
   const [page, setPage] = useState<Page>('today');
   const [session, setSession] = useState<Session | null>(null);
   const [claudeAvailable, setClaudeAvailable] = useState(false);
@@ -30,8 +42,14 @@ export function App() {
       .getSettings()
       .then((settings) => {
         setLanguage(settings.language);
-        setSkin({ theme: settings.theme, colors: settings.customColors });
+        setSkin({
+          theme: settings.theme,
+          colors: settings.customColors,
+          backdrop: settings.backdrop,
+        });
+        return window.kotoba.getSkinPicture();
       })
+      .then((picture) => setSkin((current) => ({ ...current, picture })))
       .catch(() => setLanguage('en'));
     window.kotoba
       .claudeStatus()
@@ -43,7 +61,12 @@ export function App() {
   }, [skin]);
 
   const changeSkin = useCallback(
-    (theme: Theme, colors?: CustomColors) => setSkin({ theme, colors }),
+    (
+      theme: Theme,
+      colors?: CustomColors,
+      backdrop?: Backdrop,
+      picture?: string | null,
+    ) => setSkin({ theme, colors, backdrop, picture }),
     [],
   );
 
@@ -73,6 +96,9 @@ export function App() {
 
   return (
     <I18nProvider language={language}>
+      {skin.theme === 'custom' && skin.colors && (
+        <SkinBackdrop backdrop={skin.backdrop} picture={skin.picture} />
+      )}
       {session ? (
         <TestRunner session={session} onExit={exitSession} />
       ) : (

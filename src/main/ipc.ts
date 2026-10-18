@@ -53,6 +53,7 @@ import {
 } from './vocab';
 import { localDay } from './scheduler';
 import { backupDatabase, readBackup, restoreDatabase } from './backup';
+import { readSkinPicture, saveSkinPicture } from './skin-picture';
 
 type Context = {
   db: DatabaseSync;
@@ -191,6 +192,11 @@ export function registerIpcHandlers({
     restoreDatabase(db, pendingRestore);
     pendingRestore = null;
   });
+
+  handle('skin:savePicture', (_event, payload) =>
+    saveSkinPicture(dataDir, z.string().max(25_000_000).parse(payload)),
+  );
+  handle('skin:picture', () => readSkinPicture(dataDir));
 
   handle('data:openFolder', async () => {
     const error = await shell.openPath(dataDir);
