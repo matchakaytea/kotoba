@@ -13,6 +13,7 @@ import {
   VOCAB,
   levelOf,
   pickNewWords,
+  readingOf,
   searchVocab,
   vocabSummary,
   wordStatuses,
@@ -259,5 +260,13 @@ describe('words that are in a test but not answered yet', () => {
       (w) => w.expression,
     );
     expect(picked).not.toContain('原則');
+  });
+});
+
+describe('readingOf', () => {
+  it('finds a reading by any spelling', () => {
+    expect(readingOf('納期')).toBe('のうき');
+    expect(readingOf('美味しい')).toBe('おいしい');
+    expect(readingOf('存在しない単語')).toBeUndefined();
   });
 });

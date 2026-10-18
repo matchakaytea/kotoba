@@ -124,6 +124,8 @@ export type Mistake = {
   answer: string;
   question: Question | null;
   targets: string[];
+  /** When the question is gone: the targets' readings from Vocabulary. */
+  readings?: string[];
 };
 
 export type WordStatus = 'new' | 'learning' | 'known';

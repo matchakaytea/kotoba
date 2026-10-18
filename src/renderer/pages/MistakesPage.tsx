@@ -70,7 +70,7 @@ export function MistakesPage() {
                     {shown.answer}
                   </td>
                   <td lang={answersLang} className="cell-right">
-                    {shown.expected ?? '—'}
+                    {shown.expected ?? mistake.readings?.join('、') ?? '—'}
                   </td>
                   <td className="cell-muted">
                     {formatTimestamp(mistake.answeredAt, locale)}

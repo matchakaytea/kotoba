@@ -139,3 +139,11 @@ export function pickNewWords(
   }
   return fresh.slice(0, count);
 }
+
+/** The reading of a word as Vocabulary has it, by any of its spellings. */
+export function readingOf(
+  expression: string,
+  list: VocabEntry[] = VOCAB,
+): string | undefined {
+  return list.find((entry) => writings(entry).includes(expression))?.reading;
+}

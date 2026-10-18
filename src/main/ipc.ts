@@ -15,6 +15,7 @@ import {
   Settings,
   VocabQuery,
   type ImportReport,
+  type Mistake,
 } from '../shared/api';
 import { missingLanguages } from '../shared/localize';
 import { checkAddedTranslations } from '../shared/translation-check';
@@ -36,7 +37,7 @@ import {
 } from './database';
 import { extractJson, findClaude, runClaude } from './generate';
 import { ensureInboxDirs, importInbox, type InboxDirs } from './inbox';
-import { searchVocab, vocabSummary, wordStatuses } from './vocab';
+import { readingOf, searchVocab, vocabSummary, wordStatuses } from './vocab';
 import { localDay } from './scheduler';
 
 type Context = {
@@ -48,6 +49,18 @@ type Context = {
 
 const TestId = z.string().min(1).max(200);
 const MAX_PICTURE_BYTES = 15 * 1024 * 1024;
+
+// A mistake whose test was deleted has no answer key; show the reading from
+// Vocabulary instead.
+function withReadings(mistakes: Mistake[]): Mistake[] {
+  return mistakes.map((mistake) => {
+    if (mistake.question) return mistake;
+    const readings = mistake.targets
+      .map((target) => readingOf(target))
+      .filter((reading): reading is string => Boolean(reading));
+    return readings.length > 0 ? { ...mistake, readings } : mistake;
+  });
+}
 
 export function registerIpcHandlers({
   db,
@@ -99,10 +112,10 @@ export function registerIpcHandlers({
   handle('summary:get', () => getSummary(db));
   handle('today:get', () => getToday(db));
   handle('session:get', () => buildSession(db));
-  handle('mistakes:get', () => getMistakes(db));
+  handle('mistakes:get', () => withReadings(getMistakes(db)));
   handle('mistakes:dismiss', (_event, payload) => {
     dismissMistake(db, z.number().int().parse(payload));
-    return getMistakes(db);
+    return withReadings(getMistakes(db));
   });
   handle('library:get', () => getLibrary(db));
   handle('library:delete', (_event, payload) => {
