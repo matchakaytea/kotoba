@@ -21,6 +21,10 @@ export function MistakesPage() {
     window.kotoba.getMistakes().then(setMistakes);
   }, []);
 
+  async function dismiss(id: number) {
+    setMistakes(await window.kotoba.dismissMistake(id));
+  }
+
   if (!mistakes) return null;
 
   return (
@@ -42,10 +46,11 @@ export function MistakesPage() {
               <th>{t('mistakes.yourAnswer')}</th>
               <th>{t('mistakes.correctAnswer')}</th>
               <th>{t('mistakes.when')}</th>
+              <th />
             </tr>
           </thead>
           <tbody>
-            {mistakes.map((mistake, i) => {
+            {mistakes.map((mistake) => {
               const shown = describeMistake(
                 mistake.question,
                 mistake.answer,
@@ -55,7 +60,7 @@ export function MistakesPage() {
                 ? 'ja'
                 : undefined;
               return (
-                <tr key={i}>
+                <tr key={mistake.id}>
                   <td className="cell-prompt">
                     {shown.prompt ?? (
                       <span lang="ja">{mistake.targets.join('、')}</span>
@@ -69,6 +74,15 @@ export function MistakesPage() {
                   </td>
                   <td className="cell-muted">
                     {formatTimestamp(mistake.answeredAt, locale)}
+                  </td>
+                  <td className="actions-cell">
+                    <button
+                      className="subtle"
+                      title={t('mistakes.deleteTitle')}
+                      onClick={() => dismiss(mistake.id)}
+                    >
+                      {t('library.delete')}
+                    </button>
                   </td>
                 </tr>
               );

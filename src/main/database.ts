@@ -92,6 +92,9 @@ export const MIGRATIONS: string[] = [
   `
   ALTER TABLE tests ADD COLUMN title_i18n TEXT;
   `,
+  `
+  ALTER TABLE attempts ADD COLUMN dismissed INTEGER NOT NULL DEFAULT 0;
+  `,
 ];
 
 export const SESSION_LIMITS = { maxQuestions: 20, maxNewTargets: 10 };
@@ -312,7 +315,7 @@ export function getBriefData(db: DatabaseSync, now = new Date()): BriefData {
        FROM attempts a
        JOIN attempt_targets at ON at.attempt_id = a.id
        JOIN targets t ON t.id = at.target_id
-       WHERE a.correct = 0 AND a.answered_at >= ?
+       WHERE a.correct = 0 AND a.dismissed = 0 AND a.answered_at >= ?
        ORDER BY a.answered_at DESC
        LIMIT 30`,
     )
@@ -337,18 +340,19 @@ export function getSummary(db: DatabaseSync): Summary {
 export function getMistakes(db: DatabaseSync, limit = 100): Mistake[] {
   const rows = db
     .prepare(
-      `SELECT a.answer, a.answered_at AS answeredAt, q.body,
+      `SELECT a.id, a.answer, a.answered_at AS answeredAt, q.body,
               (SELECT group_concat(t.expression, '、')
                  FROM attempt_targets at JOIN targets t ON t.id = at.target_id
                  WHERE at.attempt_id = a.id) AS targets
        FROM attempts a
        LEFT JOIN questions q
          ON q.test_id = a.test_id AND q.question_index = a.question_index
-       WHERE a.correct = 0
+       WHERE a.correct = 0 AND a.dismissed = 0
        ORDER BY a.answered_at DESC, a.id DESC
        LIMIT ?`,
     )
     .all(limit) as {
+    id: number;
     answer: string;
     answeredAt: string;
     body: string | null;
@@ -358,12 +362,23 @@ export function getMistakes(db: DatabaseSync, limit = 100): Mistake[] {
   return rows.map((row) => {
     const parsed = row.body ? Question.safeParse(JSON.parse(row.body)) : null;
     return {
+      id: row.id,
       answeredAt: row.answeredAt,
       answer: row.answer,
       question: parsed?.success ? parsed.data : null,
       targets: row.targets ? row.targets.split('、') : [],
     };
   });
+}
+
+/**
+ * Takes a wrong answer off the Mistakes page and out of what Claude is told
+ * to focus on. The answer stays in your history and review schedule.
+ */
+export function dismissMistake(db: DatabaseSync, attemptId: number): void {
+  db.prepare(
+    'UPDATE attempts SET dismissed = 1 WHERE id = ? AND correct = 0',
+  ).run(attemptId);
 }
 
 export function getTest(

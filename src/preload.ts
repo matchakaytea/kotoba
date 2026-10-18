@@ -13,6 +13,7 @@ const api: KotobaApi = {
   claudeStatus: () => ipcRenderer.invoke('claude:status'),
   generateTest: () => ipcRenderer.invoke('claude:generate'),
   getMistakes: () => ipcRenderer.invoke('mistakes:get'),
+  dismissMistake: (id) => ipcRenderer.invoke('mistakes:dismiss', id),
   getLibrary: () => ipcRenderer.invoke('library:get'),
   deleteTest: (testId) => ipcRenderer.invoke('library:delete', testId),
   translateTest: (testId) => ipcRenderer.invoke('library:translate', testId),

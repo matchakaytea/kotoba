@@ -5,6 +5,8 @@ import type { LangTest, Question } from '../shared/test-schema';
 import {
   buildSession,
   deleteTest,
+  dismissMistake,
+  getBriefData,
   getLibrary,
   getMistakes,
   getSettings,
@@ -419,18 +421,33 @@ describe('getMistakes', () => {
 
     expect(getMistakes(db)).toEqual([
       {
+        id: expect.any(Number),
         answeredAt: new Date(2026, 9, 13, 9, 0).toISOString(),
         answer: '設定',
         question: test.questions[1],
         targets: ['不具合'],
       },
       {
+        id: expect.any(Number),
         answeredAt: new Date(2026, 9, 12, 9, 0).toISOString(),
         answer: 'ふきゅう',
         question: test.questions[0],
         targets: ['復旧'],
       },
     ]);
+  });
+
+  it('can remove a mistake from the list and the brief', () => {
+    saveTest(db, test);
+    answer(0, 'ふきゅう', false, new Date(2026, 9, 12, 9, 0));
+    answer(1, '設定', false, new Date(2026, 9, 13, 9, 0));
+    const [newest] = getMistakes(db);
+    dismissMistake(db, newest.id);
+    expect(getMistakes(db).map((m) => m.answer)).toEqual(['ふきゅう']);
+    expect(
+      getBriefData(db, new Date(2026, 9, 14)).mistakes.map((m) => m.answer),
+    ).toEqual(['ふきゅう']);
+    expect(getSummary(db)).toMatchObject({ attempts: 2, correct: 0 });
   });
 
   it('still lists a mistake whose question is gone', () => {

@@ -119,6 +119,7 @@ export const DEFAULT_SETTINGS: Settings = {
 };
 
 export type Mistake = {
+  id: number;
   answeredAt: string;
   answer: string;
   question: Question | null;
@@ -155,6 +156,7 @@ export interface KotobaApi {
   claudeStatus(): Promise<{ found: boolean }>;
   generateTest(): Promise<ImportReport>;
   getMistakes(): Promise<Mistake[]>;
+  dismissMistake(id: number): Promise<Mistake[]>;
   getLibrary(): Promise<LibraryTest[]>;
   deleteTest(testId: string): Promise<LibraryTest[]>;
   translateTest(testId: string): Promise<LibraryTest[]>;

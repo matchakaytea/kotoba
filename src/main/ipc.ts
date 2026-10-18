@@ -23,6 +23,7 @@ import { briefPrompt, buildBrief, translatePrompt } from './brief';
 import {
   buildSession,
   deleteTest,
+  dismissMistake,
   getLibrary,
   getMistakes,
   getSettings,
@@ -99,6 +100,10 @@ export function registerIpcHandlers({
   handle('today:get', () => getToday(db));
   handle('session:get', () => buildSession(db));
   handle('mistakes:get', () => getMistakes(db));
+  handle('mistakes:dismiss', (_event, payload) => {
+    dismissMistake(db, z.number().int().parse(payload));
+    return getMistakes(db);
+  });
   handle('library:get', () => getLibrary(db));
   handle('library:delete', (_event, payload) => {
     deleteTest(db, TestId.parse(payload));

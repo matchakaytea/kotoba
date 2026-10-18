@@ -75,6 +75,8 @@ const en = {
   'mistakes.yourAnswer': 'Your answer',
   'mistakes.correctAnswer': 'Correct answer',
   'mistakes.when': 'When',
+  'mistakes.deleteTitle':
+    'Remove from this list. Your review history stays as it is.',
 
   'library.title': 'Library',
   'library.sub':
@@ -275,6 +277,7 @@ const zhHans: Messages = {
   'mistakes.yourAnswer': '你的答案',
   'mistakes.correctAnswer': '正确答案',
   'mistakes.when': '时间',
+  'mistakes.deleteTitle': '从列表中移除。你的复习记录不会改变。',
 
   'library.title': '题库',
   'library.sub': '{count} 套测试 · {questions} 道题。复习会从所有测试中抽题。',
@@ -449,6 +452,7 @@ const zhHant: Messages = {
   'mistakes.yourAnswer': '你的答案',
   'mistakes.correctAnswer': '正確答案',
   'mistakes.when': '時間',
+  'mistakes.deleteTitle': '從列表中移除。你的複習紀錄不會改變。',
 
   'library.title': '題庫',
   'library.sub': '{count} 份測驗 · {questions} 題。複習會從所有測驗中出題。',
@@ -624,6 +628,7 @@ const ko: Messages = {
   'mistakes.yourAnswer': '내 답',
   'mistakes.correctAnswer': '정답',
   'mistakes.when': '시간',
+  'mistakes.deleteTitle': '목록에서 지웁니다. 복습 기록은 그대로 남습니다.',
 
   'library.title': '문제집',
   'library.sub':
