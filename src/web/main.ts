@@ -12,7 +12,7 @@ import { loadDatabase, saveDatabase } from './storage';
 // the same API the desktop window has, and syncs with the learner's
 // Supabase project.
 
-const SAVE_DELAY_MS = 300;
+const SAVE_DELAY_MS = 50;
 
 async function start() {
   const SQL = await initSqlJs({ locateFile: () => wasmUrl });
@@ -39,6 +39,10 @@ async function start() {
     for (const listener of listeners) listener();
   });
   window.kotoba = webApi(db, sync, listeners);
+  // Lets the dev server's console load sample data; not in the built site.
+  if (import.meta.env.DEV) {
+    (window as unknown as { kotobaDb: DatabaseSync }).kotobaDb = db;
+  }
 
   await import('../renderer/index');
   void sync.syncNow();
