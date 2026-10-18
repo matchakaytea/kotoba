@@ -187,6 +187,17 @@ export interface KotobaApi {
   pickBackup(): Promise<BackupChoice | null>;
   restoreData(): Promise<void>;
   openDataFolder(): Promise<void>;
+  syncStatus(): Promise<SyncStatus>;
+  configureSync(config: { url: string; key: string }): Promise<SyncStatus>;
+  signIn(credentials: { email: string; password: string }): Promise<SyncStatus>;
+  signUp(credentials: {
+    email: string;
+    password: string;
+  }): Promise<SyncStatus & { confirm: boolean }>;
+  signOut(): Promise<SyncStatus>;
+  syncNow(): Promise<SyncStatus>;
+  /** Called after a sync brought in changes; returns a function to stop. */
+  onSynced(listener: () => void): () => void;
 }
 
 export type VocabTier = 'high' | 'mid' | 'low';
@@ -240,6 +251,14 @@ export const VocabQuery = z.strictObject({
 export type VocabQuery = z.infer<typeof VocabQuery>;
 
 export type VocabRow = VocabEntry & { status: WordStatus };
+
+/** Whether sync is set up, who is signed in, and how it last went. */
+export type SyncStatus = {
+  url: string | null;
+  email: string | null;
+  lastSync: string | null;
+  error: string | null;
+};
 
 /** A backup file picked for restoring, and what it holds. */
 export type BackupChoice = {

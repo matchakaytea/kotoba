@@ -29,6 +29,17 @@ const api: KotobaApi = {
   restoreData: () => ipcRenderer.invoke('data:restore'),
   openDataFolder: () => ipcRenderer.invoke('data:openFolder'),
   searchVocab: (query) => ipcRenderer.invoke('vocab:search', query),
+  syncStatus: () => ipcRenderer.invoke('sync:status'),
+  configureSync: (config) => ipcRenderer.invoke('sync:configure', config),
+  signIn: (credentials) => ipcRenderer.invoke('sync:signIn', credentials),
+  signUp: (credentials) => ipcRenderer.invoke('sync:signUp', credentials),
+  signOut: () => ipcRenderer.invoke('sync:signOut'),
+  syncNow: () => ipcRenderer.invoke('sync:now'),
+  onSynced: (listener) => {
+    const handler = () => listener();
+    ipcRenderer.on('sync:changed', handler);
+    return () => ipcRenderer.removeListener('sync:changed', handler);
+  },
 };
 
 contextBridge.exposeInMainWorld('kotoba', api);

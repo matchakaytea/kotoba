@@ -36,6 +36,10 @@ export function App() {
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [lastReport, setLastReport] = useState<ImportReport | null>(null);
+  // Bumped when a sync brings in changes, so the open page reloads its data.
+  const [synced, setSynced] = useState(0);
+
+  useEffect(() => window.kotoba.onSynced(() => setSynced((n) => n + 1)), []);
 
   useEffect(() => {
     window.kotoba
@@ -104,7 +108,7 @@ export function App() {
       ) : (
         <div className="shell">
           <Sidebar current={page} onSelect={setPage} />
-          <main className="content">
+          <main className="content" key={synced}>
             {page === 'today' && (
               <TodayPage
                 onStart={start}

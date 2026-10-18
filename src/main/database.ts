@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 import {
   DEFAULT_SETTINGS,
@@ -95,6 +96,19 @@ export const MIGRATIONS: string[] = [
   `
   ALTER TABLE attempts ADD COLUMN dismissed INTEGER NOT NULL DEFAULT 0;
   `,
+  // Sync: every answer gets an id that is the same on every device, and rows
+  // remember whether they still need uploading.
+  `
+  ALTER TABLE attempts ADD COLUMN uid TEXT;
+  ALTER TABLE attempts ADD COLUMN synced INTEGER NOT NULL DEFAULT 0;
+  UPDATE attempts SET uid = lower(hex(randomblob(16))) WHERE uid IS NULL;
+  CREATE UNIQUE INDEX attempts_uid ON attempts (uid);
+  ALTER TABLE tests ADD COLUMN synced INTEGER NOT NULL DEFAULT 0;
+  CREATE TABLE deleted_tests (
+    id TEXT PRIMARY KEY,
+    synced INTEGER NOT NULL DEFAULT 0
+  );
+  `,
 ];
 
 export const SESSION_LIMITS = { maxQuestions: 20, maxNewTargets: 10 };
@@ -135,10 +149,11 @@ export function recordAttempt(
   return transaction(db, () => {
     const result = db
       .prepare(
-        `INSERT INTO attempts (test_id, question_index, template, answer, correct, answered_at)
-         VALUES (?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO attempts (uid, test_id, question_index, template, answer, correct, answered_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
+        randomUUID(),
         input.testId,
         input.questionIndex,
         input.template,
@@ -167,11 +182,12 @@ export function saveTest(
 ): void {
   transaction(db, () => {
     db.prepare(
-      `INSERT INTO tests (id, title, title_i18n, imported_at) VALUES (?, ?, ?, ?)
+      `INSERT INTO tests (id, title, title_i18n, imported_at, synced) VALUES (?, ?, ?, ?, 0)
        ON CONFLICT (id) DO UPDATE SET
          title = excluded.title,
          title_i18n = excluded.title_i18n,
-         imported_at = excluded.imported_at`,
+         imported_at = excluded.imported_at,
+         synced = 0`,
     ).run(
       test.test_id,
       test.title,
@@ -179,6 +195,7 @@ export function saveTest(
       now.toISOString(),
     );
     db.prepare('DELETE FROM questions WHERE test_id = ?').run(test.test_id);
+    db.prepare('DELETE FROM deleted_tests WHERE id = ?').run(test.test_id);
 
     const insertQuestion = db.prepare(
       'INSERT INTO questions (test_id, question_index, body) VALUES (?, ?, ?) RETURNING id',
@@ -377,7 +394,7 @@ export function getMistakes(db: DatabaseSync, limit = 100): Mistake[] {
  */
 export function dismissMistake(db: DatabaseSync, attemptId: number): void {
   db.prepare(
-    'UPDATE attempts SET dismissed = 1 WHERE id = ? AND correct = 0',
+    'UPDATE attempts SET dismissed = 1, synced = 0 WHERE id = ? AND correct = 0',
   ).run(attemptId);
 }
 
@@ -452,6 +469,9 @@ export function deleteTest(db: DatabaseSync, testId: string): void {
 
     db.prepare('DELETE FROM questions WHERE test_id = ?').run(testId);
     db.prepare('DELETE FROM tests WHERE id = ?').run(testId);
+    db.prepare(
+      'INSERT OR REPLACE INTO deleted_tests (id, synced) VALUES (?, 0)',
+    ).run(testId);
 
     const removeUnused = db.prepare(
       `DELETE FROM targets
@@ -484,7 +504,140 @@ export function saveSettings(
     `INSERT INTO settings (key, value) VALUES ('learner', ?)
      ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
   ).run(JSON.stringify(valid));
+  db.prepare(
+    `INSERT INTO settings (key, value) VALUES ('learner_changed_at', ?)
+     ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
+  ).run(new Date().toISOString());
   return valid;
+}
+
+/** An answer as it travels between devices. */
+export type SyncedAttempt = {
+  uid: string;
+  test_id: string;
+  question_index: number;
+  template: string;
+  answer: string;
+  correct: boolean;
+  answered_at: string;
+  targets: Target[];
+  dismissed: boolean;
+};
+
+/** Answers changed on this device since the last upload. */
+export function unsyncedAttempts(db: DatabaseSync): SyncedAttempt[] {
+  const rows = db
+    .prepare(
+      `SELECT id, uid, test_id, question_index, template, answer, correct,
+              answered_at, dismissed
+       FROM attempts WHERE synced = 0 ORDER BY id`,
+    )
+    .all() as {
+    id: number;
+    uid: string;
+    test_id: string;
+    question_index: number;
+    template: string;
+    answer: string;
+    correct: number;
+    answered_at: string;
+    dismissed: number;
+  }[];
+  const targets = db.prepare(
+    `SELECT t.expression, t.reading, t.skill
+     FROM attempt_targets at JOIN targets t ON t.id = at.target_id
+     WHERE at.attempt_id = ?`,
+  );
+  return rows.map((row) => ({
+    uid: row.uid,
+    test_id: row.test_id,
+    question_index: row.question_index,
+    template: row.template,
+    answer: row.answer,
+    correct: row.correct === 1,
+    answered_at: row.answered_at,
+    dismissed: row.dismissed === 1,
+    targets: (
+      targets.all(row.id) as {
+        expression: string;
+        reading: string | null;
+        skill: Target['skill'];
+      }[]
+    ).map((t) => ({
+      expression: t.expression,
+      skill: t.skill,
+      ...(t.reading ? { reading: t.reading } : {}),
+    })),
+  }));
+}
+
+/**
+ * Adds answers from another device. Returns how many were new; when any
+ * were, the review schedule is rebuilt from every answer in time order so
+ * both devices agree.
+ */
+export function applySyncedAttempts(
+  db: DatabaseSync,
+  attempts: SyncedAttempt[],
+): number {
+  return transaction(db, () => {
+    const find = db.prepare('SELECT id FROM attempts WHERE uid = ?');
+    const dismiss = db.prepare(
+      'UPDATE attempts SET dismissed = 1 WHERE uid = ? AND dismissed = 0',
+    );
+    const insert = db.prepare(
+      `INSERT INTO attempts (uid, test_id, question_index, template, answer, correct, answered_at, dismissed, synced)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+    );
+    const link = db.prepare(
+      'INSERT OR IGNORE INTO attempt_targets (attempt_id, target_id) VALUES (?, ?)',
+    );
+    let added = 0;
+    for (const attempt of attempts) {
+      if (find.get(attempt.uid)) {
+        if (attempt.dismissed) dismiss.run(attempt.uid);
+        continue;
+      }
+      const id = Number(
+        insert.run(
+          attempt.uid,
+          attempt.test_id,
+          attempt.question_index,
+          attempt.template,
+          attempt.answer,
+          attempt.correct ? 1 : 0,
+          attempt.answered_at,
+          attempt.dismissed ? 1 : 0,
+        ).lastInsertRowid,
+      );
+      for (const target of attempt.targets) {
+        link.run(id, upsertTarget(db, target, new Date(attempt.answered_at)));
+      }
+      added++;
+    }
+    if (added > 0) rebuildReviewStates(db);
+    return added;
+  });
+}
+
+/** Recomputes every review state by replaying all answers in time order. */
+export function rebuildReviewStates(db: DatabaseSync): void {
+  db.exec('DELETE FROM review_states');
+  const rows = db
+    .prepare(
+      `SELECT a.correct, a.answered_at, at.target_id
+       FROM attempts a JOIN attempt_targets at ON at.attempt_id = a.id
+       ORDER BY a.answered_at, a.id`,
+    )
+    .all() as { correct: number; answered_at: string; target_id: number }[];
+  for (const row of rows) {
+    scheduleTarget(
+      db,
+      row.target_id,
+      row.correct === 1,
+      new Date(row.answered_at),
+    );
+  }
 }
 
 function upsertTarget(db: DatabaseSync, target: Target, now: Date): number {

@@ -54,12 +54,14 @@ import {
 import { localDay } from './scheduler';
 import { backupDatabase, readBackup, restoreDatabase } from './backup';
 import { readSkinPicture, saveSkinPicture } from './skin-picture';
+import type { SyncManager } from './sync/manager';
 
 type Context = {
   db: DatabaseSync;
   dirs: InboxDirs;
   workDir: string;
   dataDir: string;
+  sync: SyncManager;
   isTrustedSender: (event: IpcMainInvokeEvent) => boolean;
 };
 
@@ -83,6 +85,7 @@ export function registerIpcHandlers({
   dirs,
   workDir,
   dataDir,
+  sync,
   isTrustedSender,
 }: Context): void {
   function handle(
@@ -102,6 +105,7 @@ export function registerIpcHandlers({
 
   function importAndRemember(): ImportReport {
     const report = importInbox(db, dirs);
+    if (report.imported.length > 0) sync.schedule();
     unseen = {
       imported: [...unseen.imported, ...report.imported],
       rejected: [...unseen.rejected, ...report.rejected],
@@ -125,6 +129,7 @@ export function registerIpcHandlers({
 
   handle('attempt:save', (_event, payload) => {
     recordAttempt(db, AttemptInput.parse(payload));
+    sync.schedule();
   });
   handle('summary:get', () => getSummary(db));
   handle('today:get', () => getToday(db));
@@ -132,17 +137,28 @@ export function registerIpcHandlers({
   handle('mistakes:get', () => withReadings(getMistakes(db)));
   handle('mistakes:dismiss', (_event, payload) => {
     dismissMistake(db, z.number().int().parse(payload));
+    sync.schedule();
     return withReadings(getMistakes(db));
   });
   handle('library:get', () => getLibrary(db));
   handle('library:delete', (_event, payload) => {
     deleteTest(db, TestId.parse(payload));
+    sync.schedule();
     return getLibrary(db);
   });
   handle('settings:get', () => getSettings(db));
-  handle('settings:save', (_event, payload) =>
-    saveSettings(db, Settings.parse(payload)),
-  );
+  handle('settings:save', (_event, payload) => {
+    const saved = saveSettings(db, Settings.parse(payload));
+    sync.schedule();
+    return saved;
+  });
+
+  handle('sync:status', () => sync.status());
+  handle('sync:configure', (_event, payload) => sync.configure(payload));
+  handle('sync:signIn', (_event, payload) => sync.signIn(payload));
+  handle('sync:signUp', (_event, payload) => sync.signUp(payload));
+  handle('sync:signOut', () => sync.signOut());
+  handle('sync:now', () => sync.syncNow(true));
   handle('inbox:import', () => importAndRemember());
 
   handle('inbox:dismiss', () => {
@@ -289,6 +305,7 @@ export function registerIpcHandlers({
       );
     }
     saveTest(db, result.test, stored.importedAt);
+    sync.schedule();
     return getLibrary(db);
   });
 }

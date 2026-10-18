@@ -6,6 +6,7 @@ import { buildPalette } from './shared/palette';
 import { getSettings, openDatabase } from './main/database';
 import { inboxDirs } from './main/inbox';
 import { registerIpcHandlers } from './main/ipc';
+import { SyncManager } from './main/sync/manager';
 import {
   loadWindowState,
   MIN_SIZE,
@@ -80,12 +81,18 @@ app.whenReady().then(() => {
   const userData = app.getPath('userData');
   const db = openDatabase(path.join(userData, 'kotoba.db'));
   app.on('will-quit', () => db.close());
+  // Syncs with the learner's Supabase project, if they set one up, and tells
+  // the window when it brought in changes from another device.
+  const sync = new SyncManager(db, () =>
+    mainWindow?.webContents.send('sync:changed'),
+  );
 
   registerIpcHandlers({
     db,
     dirs: inboxDirs(userData),
     workDir: path.join(userData, 'claude-work'),
     dataDir: userData,
+    sync,
     isTrustedSender: (event) =>
       mainWindow !== null &&
       event.sender === mainWindow.webContents &&
@@ -94,6 +101,7 @@ app.whenReady().then(() => {
 
   const background = () => windowBackground(getSettings(db));
   createWindow(background());
+  void sync.syncNow();
 
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
