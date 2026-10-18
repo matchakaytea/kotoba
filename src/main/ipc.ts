@@ -21,7 +21,13 @@ import {
 import { missingLanguages } from '../shared/localize';
 import { checkAddedTranslations } from '../shared/translation-check';
 import { validateTestFile } from '../shared/validate-test-file';
-import { briefPrompt, buildBrief, translatePrompt } from './brief';
+import {
+  briefPrompt,
+  buildBrief,
+  missingNewWords,
+  missingWordsPrompt,
+  translatePrompt,
+} from './brief';
 import {
   buildSession,
   deleteTest,
@@ -224,13 +230,28 @@ export function registerIpcHandlers({
   handle('claude:status', () => ({ found: findClaude() !== null }));
 
   handle('claude:generate', async () => {
-    const reply = await askClaude(briefPrompt(buildBrief(db)));
+    const brief = buildBrief(db);
+    let reply = await askClaude(briefPrompt(brief));
+    let missing = missingNewWords(brief, reply);
+    if (missing.length > 0) {
+      // Ask once more for the words left out. Keep the retry only if it
+      // covers more of them.
+      const retry = await askClaude(missingWordsPrompt(reply, missing));
+      const retryMissing = missingNewWords(brief, retry);
+      if (retryMissing.length < missing.length) {
+        reply = retry;
+        missing = retryMissing;
+      }
+    }
     ensureInboxDirs(dirs);
     const now = new Date();
     const time = now.toTimeString().slice(0, 8).replace(/:/g, '');
     const file = path.join(dirs.inbox, `claude-${localDay(now)}-${time}.json`);
     fs.writeFileSync(file, reply, 'utf8');
-    return importAndRemember();
+    return {
+      ...importAndRemember(),
+      missingWords: missing.map((word) => word.expression),
+    };
   });
 
   handle('library:translate', async (_event, payload) => {

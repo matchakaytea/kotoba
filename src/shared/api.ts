@@ -51,6 +51,8 @@ export type Session = {
 export type ImportReport = {
   imported: { file: string; title: string; questions: number }[];
   rejected: { file: string; errors: string[] }[];
+  // New words from the brief that the generated test still leaves out.
+  missingWords?: string[];
 };
 
 export const TARGET_LANGUAGES = [

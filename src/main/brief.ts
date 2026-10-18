@@ -145,3 +145,58 @@ Test:
 ${JSON.stringify(test, null, 2)}
 `;
 }
+
+type Brief = ReturnType<typeof buildBrief>;
+
+// Returns the brief's new words that the reply has no question for. A reply
+// that isn't valid JSON counts as having none, so every new word is missing.
+export function missingNewWords(
+  brief: Pick<Brief, 'new_words'>,
+  reply: string,
+): Brief['new_words'] {
+  const used = new Set(targetsIn(reply));
+  return brief.new_words.filter((word) => !used.has(word.expression));
+}
+
+function targetsIn(reply: string): string[] {
+  let data: unknown;
+  try {
+    data = JSON.parse(reply);
+  } catch {
+    return [];
+  }
+  const questions = (data as { questions?: unknown })?.questions;
+  if (!Array.isArray(questions)) return [];
+  return questions.flatMap((question) => {
+    const targets = (question as { targets?: unknown })?.targets;
+    if (!Array.isArray(targets)) return [];
+    return targets.flatMap((target) => {
+      const expression = (target as { expression?: unknown })?.expression;
+      return typeof expression === 'string'
+        ? [plainExpression(expression)]
+        : [];
+    });
+  });
+}
+
+export function missingWordsPrompt(
+  test: string,
+  missing: Brief['new_words'],
+): string {
+  return `The practice test below leaves out some new words. Add one question for each of these words, in the same format as the rest of the test.
+
+Return ONLY the complete test as one JSON object. No explanation, no Markdown code fences.
+
+Rules:
+- Keep every existing question exactly as it is, character for character. Only add new questions, at the end.
+- Each new question's "targets" uses the word's "expression" exactly as given below, with the reading from "readings".
+- Write each question's prompt in the same language as the test's existing prompts. Use the meanings below so the question agrees with the learner's word list.
+- Do not change "test_id" or "title".
+
+Words to add:
+${JSON.stringify(missing, null, 2)}
+
+Test:
+${test}
+`;
+}

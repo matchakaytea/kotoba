@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { briefPrompt, buildBrief } from './brief';
+import { briefPrompt, buildBrief, missingNewWords } from './brief';
 import { openDatabase, recordAttempt } from './database';
 
 const monday = new Date(2026, 9, 12, 9, 0);
@@ -98,5 +98,57 @@ describe('briefPrompt language', () => {
       'every option that is a meaning or explanation, and the "title" in Traditional Chinese',
     );
     expect(prompt).toContain('Never write prompts or meanings in English');
+  });
+});
+
+describe('missingNewWords', () => {
+  const word = (expression: string) => ({
+    expression,
+    readings: ['よみ'],
+    meaning: 'meaning',
+    meaning_zh_hans: '含义',
+    meaning_zh_hant: '含義',
+  });
+  const brief = { new_words: [word('復旧'), word('抑制')] };
+
+  it('reports new words no question targets', () => {
+    const reply = JSON.stringify({
+      questions: [
+        {
+          targets: [
+            { expression: '復旧', reading: 'ふっきゅう', skill: 'reading' },
+          ],
+        },
+      ],
+    });
+    expect(missingNewWords(brief, reply).map((w) => w.expression)).toEqual([
+      '抑制',
+    ]);
+  });
+
+  it('ignores bracket readings when matching', () => {
+    const reply = JSON.stringify({
+      questions: [
+        {
+          targets: [
+            {
+              expression: '復旧[ふっきゅう]',
+              reading: 'ふっきゅう',
+              skill: 'reading',
+            },
+          ],
+        },
+        {
+          targets: [
+            { expression: '抑制', reading: 'よくせい', skill: 'reading' },
+          ],
+        },
+      ],
+    });
+    expect(missingNewWords(brief, reply)).toEqual([]);
+  });
+
+  it('treats a reply that is not JSON as missing every word', () => {
+    expect(missingNewWords(brief, 'not json')).toHaveLength(2);
   });
 });

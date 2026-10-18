@@ -69,6 +69,7 @@ const en = {
   'import.imported': 'Imported “{title}” ({count} questions)',
   'import.rejected': '{file} was rejected ({count} problems)',
   'import.dismiss': 'Dismiss',
+  'import.missingWords': 'These new words are not in the test: {words}',
 
   'mistakes.title': 'Mistakes',
   'mistakes.sub':
@@ -285,6 +286,7 @@ const zhHans: Messages = {
   'import.imported': '已导入“{title}”（{count} 道题）',
   'import.rejected': '{file} 未通过检查（{count} 个问题）',
   'import.dismiss': '关闭',
+  'import.missingWords': '这些新词没有出现在测试中：{words}',
 
   'mistakes.title': '错题',
   'mistakes.sub':
@@ -474,6 +476,7 @@ const zhHant: Messages = {
   'import.imported': '已匯入「{title}」（{count} 題）',
   'import.rejected': '{file} 未通過檢查（{count} 個問題）',
   'import.dismiss': '關閉',
+  'import.missingWords': '這些新詞沒有出現在測驗中：{words}',
 
   'mistakes.title': '錯題',
   'mistakes.sub':
@@ -664,6 +667,7 @@ const ko: Messages = {
   'import.imported': '“{title}” 가져옴 (문제 {count}개)',
   'import.rejected': '{file} 파일이 거부됨 (문제점 {count}개)',
   'import.dismiss': '닫기',
+  'import.missingWords': '이 새 단어들은 테스트에 없습니다: {words}',
 
   'mistakes.title': '오답',
   'mistakes.sub':

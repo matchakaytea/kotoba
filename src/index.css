@@ -306,6 +306,10 @@ input {
   color: var(--correct);
 }
 
+.notice-missing {
+  color: var(--warning, inherit);
+}
+
 .notice-rejected summary {
   color: var(--wrong);
   cursor: pointer;

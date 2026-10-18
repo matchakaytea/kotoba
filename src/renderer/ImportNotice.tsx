@@ -8,7 +8,12 @@ type Props = {
 
 export function ImportNotice({ report, onDismiss }: Props) {
   const { t } = useI18n();
-  if (report.imported.length === 0 && report.rejected.length === 0) {
+  const missing = report.missingWords ?? [];
+  if (
+    report.imported.length === 0 &&
+    report.rejected.length === 0 &&
+    missing.length === 0
+  ) {
     return null;
   }
   return (
@@ -25,6 +30,11 @@ export function ImportNotice({ report, onDismiss }: Props) {
           ✓ {t('import.imported', { title: item.title, count: item.questions })}
         </p>
       ))}
+      {missing.length > 0 && (
+        <p className="notice-missing">
+          ! {t('import.missingWords', { words: missing.join('、') })}
+        </p>
+      )}
       {report.rejected.map((item, i) => (
         <details key={`bad-${i}`} className="notice-rejected">
           <summary>
