@@ -21,6 +21,7 @@ const api: KotobaApi = {
   saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings),
   pickPicture: () => ipcRenderer.invoke('picture:pick'),
   getVocabSummary: () => ipcRenderer.invoke('vocab:summary'),
+  getOtherWords: () => ipcRenderer.invoke('vocab:others'),
   searchVocab: (query) => ipcRenderer.invoke('vocab:search', query),
 };
 

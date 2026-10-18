@@ -56,12 +56,18 @@ export function buildBrief(
     })),
     recent_mistakes: mistakes,
     word_list: jlptLevel ? `JLPT N${jlptLevel}` : null,
-    new_words: newWords.map((word) => ({
-      expression: plainExpression(word.expression),
-      readings: word.reading.split('、'),
-      meaning: word.meaningEn,
-      ...(word.note ? { note: word.note } : {}),
-    })),
+    new_words: newWords.map((word) => {
+      const example = word.examples.find((e) => e.kind === 'sentence');
+      return {
+        expression: plainExpression(word.expression),
+        readings: word.reading.split('、'),
+        meaning: word.meaningEn,
+        meaning_zh_hans: word.meaningSc,
+        meaning_zh_hant: word.meaningTc,
+        ...(word.note ? { note: word.note } : {}),
+        ...(example ? { example: example.text } : {}),
+      };
+    }),
   };
 }
 
@@ -70,7 +76,9 @@ function newWordsRule(brief: ReturnType<typeof buildBrief>): string {
   if (brief.new_words.length === 0) {
     return `- Fill the remaining questions with new, useful words for a learner ${brief.learner.level}, on these topics: ${topics}.`;
   }
-  return `- Fill the remaining questions with the words in "new_words" (from the ${brief.word_list} vocabulary list), one question per word, in the order given. Use the topics (${topics}) as the theme of the prompts and example sentences. In "targets", use each word's "expression" exactly as written.`;
+  return `- Fill the remaining questions with the words in "new_words" (from the ${brief.word_list} vocabulary list), one question per word, in the order given. Use the topics (${topics}) as the theme of the prompts and example sentences. In "targets", use each word's "expression" exactly as written.
+- Each new word comes with its meaning in English ("meaning") and Chinese ("meaning_zh_hans", "meaning_zh_hant"). Test the sense these describe. When a question's options are meanings, base them on these, so they agree with the learner's word list.
+- "example", when given, shows the word in use. Write your own sentence; do not copy it.`;
 }
 
 export function briefPrompt(brief: ReturnType<typeof buildBrief>): string {

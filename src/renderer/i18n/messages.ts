@@ -17,6 +17,9 @@ const en = {
   'vocab.pos': 'Part of speech',
   'vocab.meaning': 'Meaning',
   'vocab.spellings': 'Also written',
+  'vocab.others': 'Other words you have practised',
+  'vocab.othersSub':
+    'Words from your tests that are not in the JLPT lists. They are reviewed like any other word.',
   'vocab.credit':
     'Vocabulary and example sentences from anki-jlpt-decks by egg rolls (CC BY-NC 4.0, non-commercial use only). Traditional Chinese by ShihHsing Chen. More words and English meanings from the JLPT lists by Jonathan Waller (CC BY); other meanings translated.',
   'words.progress': '{known} known · {learning} learning · {total} words',
@@ -219,6 +222,9 @@ const zhHans: Messages = {
   'vocab.pos': '词性',
   'vocab.meaning': '释义',
   'vocab.spellings': '其他写法',
+  'vocab.others': '你练习过的其他单词',
+  'vocab.othersSub':
+    '测试中出现、但不在 JLPT 词表里的单词。它们和其他单词一样会被复习。',
   'vocab.credit':
     '词汇与例句来自 anki-jlpt-decks（蛋卷，CC BY-NC 4.0，仅限非商业用途）。繁体释义由 ShihHsing Chen 提供。更多词汇和英文释义来自 Jonathan Waller 的 JLPT 词表（CC BY），其余释义为翻译。',
   'words.progress': '已掌握 {known} · 学习中 {learning} · 共 {total} 个',
@@ -394,6 +400,9 @@ const zhHant: Messages = {
   'vocab.pos': '詞性',
   'vocab.meaning': '釋義',
   'vocab.spellings': '其他寫法',
+  'vocab.others': '你練習過的其他單字',
+  'vocab.othersSub':
+    '測驗中出現、但不在 JLPT 詞表裡的單字。它們和其他單字一樣會被複習。',
   'vocab.credit':
     '詞彙與例句來自 anki-jlpt-decks（蛋卷，CC BY-NC 4.0，僅限非商業用途）。繁體釋義由 ShihHsing Chen 提供，並調整為台灣用語。更多詞彙和英文釋義來自 Jonathan Waller 的 JLPT 詞表（CC BY），其餘釋義為翻譯。',
   'words.progress': '已掌握 {known} · 學習中 {learning} · 共 {total} 個',
@@ -570,6 +579,9 @@ const ko: Messages = {
   'vocab.pos': '품사',
   'vocab.meaning': '뜻 (중국어)',
   'vocab.spellings': '다른 표기',
+  'vocab.others': '연습한 다른 단어',
+  'vocab.othersSub':
+    '테스트에 나왔지만 JLPT 단어 목록에 없는 단어입니다. 다른 단어와 똑같이 복습합니다.',
   'vocab.credit':
     '단어와 예문 출처: anki-jlpt-decks (egg rolls, CC BY-NC 4.0, 비상업적 사용만 가능). 번체 중국어 뜻: ShihHsing Chen. 추가 단어와 영어 뜻: Jonathan Waller의 JLPT 단어 목록 (CC BY).',
   'words.progress': '익힘 {known} · 학습 중 {learning} · 전체 {total}개',

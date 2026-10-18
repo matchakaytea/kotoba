@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useState } from 'react';
 import type {
+  OtherWord,
   VocabEntry,
   VocabLevelSummary,
   VocabPage as Page,
@@ -52,6 +53,7 @@ export function VocabPage() {
   const [tier, setTier] = useState<VocabQuery['tier']>(undefined);
   const [status, setStatus] = useState<WordStatus | undefined>(undefined);
   const [summary, setSummary] = useState<VocabLevelSummary[] | null>(null);
+  const [others, setOthers] = useState<OtherWord[]>([]);
   const [search, setSearch] = useState('');
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [page, setPage] = useState<Page | null>(null);
@@ -59,6 +61,7 @@ export function VocabPage() {
 
   useEffect(() => {
     window.kotoba.getVocabSummary().then(setSummary);
+    window.kotoba.getOtherWords().then(setOthers);
   }, []);
 
   useEffect(() => {
@@ -234,6 +237,39 @@ export function VocabPage() {
         >
           {t('words.showMore', { count: page.total - page.entries.length })}
         </button>
+      )}
+
+      {others.length > 0 && (
+        <section className="vocab-others">
+          <h2>{t('vocab.others')}</h2>
+          <p className="page-sub">{t('vocab.othersSub')}</p>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>{t('words.word')}</th>
+                <th>{t('words.reading')}</th>
+                <th>{t('words.status')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {others.map((word) => (
+                <tr key={word.expression}>
+                  <td lang="ja" className="cell-prompt">
+                    {word.expression}
+                  </td>
+                  <td lang="ja" className="cell-muted">
+                    {word.reading ?? '—'}
+                  </td>
+                  <td>
+                    <span className={`tag status-${word.status}`}>
+                      {t(`words.${word.status}`)}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
       )}
 
       <p className="page-footer">{t('vocab.credit')}</p>

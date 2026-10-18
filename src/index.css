@@ -1174,3 +1174,11 @@ select:disabled {
 .word-search {
   min-width: 14rem;
 }
+
+.vocab-others {
+  margin-top: 32px;
+}
+
+.vocab-others h2 {
+  margin-bottom: 4px;
+}

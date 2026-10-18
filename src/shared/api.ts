@@ -167,6 +167,7 @@ export interface KotobaApi {
   pickPicture(): Promise<string | null>;
   getVocabSummary(): Promise<VocabLevelSummary[]>;
   searchVocab(query: VocabQuery): Promise<VocabPage>;
+  getOtherWords(): Promise<OtherWord[]>;
 }
 
 export type VocabTier = 'high' | 'mid' | 'low';
@@ -220,5 +221,12 @@ export const VocabQuery = z.strictObject({
 export type VocabQuery = z.infer<typeof VocabQuery>;
 
 export type VocabRow = VocabEntry & { status: WordStatus };
+
+/** A word you have practised that is not in Vocabulary. */
+export type OtherWord = {
+  expression: string;
+  reading?: string;
+  status: WordStatus;
+};
 
 export type VocabPage = { total: number; entries: VocabRow[] };

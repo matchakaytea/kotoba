@@ -1,5 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite';
 import type {
+  OtherWord,
   VocabEntry,
   VocabLevelSummary,
   VocabPage,
@@ -113,7 +114,18 @@ export function vocabSummary(
   });
 }
 
-/** Picks words from the level that are in none of your tests yet, in a random order. */
+// Common words come first. Words from the JLPT list have no frequency tier;
+// they rank with the medium ones.
+const TIER_RANK: Record<string, number> = { high: 0, mid: 1, low: 2 };
+
+function tierRank(entry: VocabEntry): number {
+  return entry.tier ? TIER_RANK[entry.tier] : 1;
+}
+
+/**
+ * Picks words from the level that are in none of your tests yet: common words
+ * first, in a random order within each frequency tier.
+ */
 export function pickNewWords(
   db: DatabaseSync,
   level: Level,
@@ -137,7 +149,7 @@ export function pickNewWords(
     const j = Math.floor(random() * (i + 1));
     [fresh[i], fresh[j]] = [fresh[j], fresh[i]];
   }
-  return fresh.slice(0, count);
+  return fresh.sort((a, b) => tierRank(a) - tierRank(b)).slice(0, count);
 }
 
 /** The reading of a word as Vocabulary has it, by any of its spellings. */
@@ -146,4 +158,29 @@ export function readingOf(
   list: VocabEntry[] = VOCAB,
 ): string | undefined {
   return list.find((entry) => writings(entry).includes(expression))?.reading;
+}
+
+/** Words you have practised that are not in Vocabulary, with their status. */
+export function otherWords(
+  db: DatabaseSync,
+  list: VocabEntry[] = VOCAB,
+): OtherWord[] {
+  const known = new Set(list.flatMap(writings));
+  const statuses = wordStatuses(db);
+  const rows = db
+    .prepare(
+      `SELECT t.expression, MAX(t.reading) AS reading
+       FROM targets t
+       JOIN review_states r ON r.target_id = t.id
+       GROUP BY t.expression
+       ORDER BY MIN(t.created_at), t.expression`,
+    )
+    .all() as { expression: string; reading: string | null }[];
+  return rows
+    .filter((row) => !known.has(row.expression))
+    .map((row) => ({
+      expression: row.expression,
+      reading: row.reading ?? undefined,
+      status: statuses.get(row.expression) ?? 'new',
+    }));
 }

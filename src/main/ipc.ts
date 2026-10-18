@@ -37,7 +37,13 @@ import {
 } from './database';
 import { extractJson, findClaude, runClaude } from './generate';
 import { ensureInboxDirs, importInbox, type InboxDirs } from './inbox';
-import { readingOf, searchVocab, vocabSummary, wordStatuses } from './vocab';
+import {
+  otherWords,
+  readingOf,
+  searchVocab,
+  vocabSummary,
+  wordStatuses,
+} from './vocab';
 import { localDay } from './scheduler';
 
 type Context = {
@@ -163,6 +169,7 @@ export function registerIpcHandlers({
   });
 
   handle('vocab:summary', () => vocabSummary(wordStatuses(db)));
+  handle('vocab:others', () => otherWords(db));
   handle('vocab:search', (_event, payload) =>
     searchVocab(VocabQuery.parse(payload), wordStatuses(db)),
   );

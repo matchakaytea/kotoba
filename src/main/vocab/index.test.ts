@@ -12,6 +12,7 @@ import {
 import {
   VOCAB,
   levelOf,
+  otherWords,
   pickNewWords,
   readingOf,
   searchVocab,
@@ -268,5 +269,43 @@ describe('readingOf', () => {
     expect(readingOf('納期')).toBe('のうき');
     expect(readingOf('美味しい')).toBe('おいしい');
     expect(readingOf('存在しない単語')).toBeUndefined();
+  });
+});
+
+describe('pickNewWords order', () => {
+  it('picks common words before medium and rare ones', () => {
+    const tiered: VocabEntry[] = [
+      { ...entry('稀', 1), tier: 'low' },
+      { ...entry('並', 1), tier: 'mid' },
+      { ...entry('常', 1), tier: 'high' },
+      entry('表', 1),
+    ];
+    const picked = pickNewWords(db, 1, 4, Math.random, tiered).map(
+      (w) => w.expression,
+    );
+    expect(picked[0]).toBe('常');
+    expect(picked.slice(1, 3).sort()).toEqual(['並', '表']);
+    expect(picked[3]).toBe('稀');
+  });
+});
+
+describe('brief new words', () => {
+  it('carry Chinese meanings and an example when there is one', () => {
+    const brief = buildBrief(db, new Date(2026, 9, 1), () => 0.3);
+    expect(
+      brief.new_words.every((w) => w.meaning_zh_hans && w.meaning_zh_hant),
+    ).toBe(true);
+    expect(brief.new_words.some((w) => w.example)).toBe(true);
+    expect(briefPrompt(brief)).toContain('"meaning_zh_hans"');
+  });
+});
+
+describe('otherWords', () => {
+  it('lists practised words that are not in Vocabulary', () => {
+    practise('互換性', true, new Date(2026, 9, 1));
+    practise('原則', true, new Date(2026, 9, 1));
+    expect(otherWords(db, list)).toEqual([
+      { expression: '互換性', reading: undefined, status: 'learning' },
+    ]);
   });
 });
