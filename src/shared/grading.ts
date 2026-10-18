@@ -1,4 +1,8 @@
-import type { MultipleChoiceQuestion, ReadingQuestion } from './test-schema';
+import type {
+  MultipleChoiceQuestion,
+  ReadingQuestion,
+  RecallQuestion,
+} from './test-schema';
 
 export type Hint = 'small-tsu' | 'small-ya' | 'voiced-marks' | 'vowel-length';
 
@@ -29,6 +33,18 @@ export function gradeReading(
   if (accepted.includes(given)) {
     return { correct: true, expected };
   }
+  return { correct: false, expected, hint: nearMissHint(given, accepted) };
+}
+
+/** Accepts the word as written or any of its readings. */
+export function gradeRecall(
+  question: RecallQuestion,
+  answer: string,
+): GradeResult {
+  const given = normalizeKana(answer);
+  const accepted = question.answers.map(normalizeKana);
+  const expected = question.answers.join(' / ');
+  if (accepted.includes(given)) return { correct: true, expected };
   return { correct: false, expected, hint: nearMissHint(given, accepted) };
 }
 

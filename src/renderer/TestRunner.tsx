@@ -6,6 +6,7 @@ import { Feedback } from './Feedback';
 import { useI18n } from './i18n/i18n';
 import { MultipleChoice } from './MultipleChoice';
 import { Reading } from './Reading';
+import { Recall } from './Recall';
 
 type Props = {
   session: Session;
@@ -125,5 +126,7 @@ function QuestionView({ question, ...rest }: QuestionViewProps) {
       return <MultipleChoice question={question} {...rest} />;
     case 'reading':
       return <Reading question={question} {...rest} />;
+    case 'recall':
+      return <Recall question={question} {...rest} />;
   }
 }

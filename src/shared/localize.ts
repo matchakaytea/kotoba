@@ -1,10 +1,20 @@
 import type { Language } from './languages';
-import type { MultipleChoiceQuestion, Question } from './test-schema';
+import type {
+  MultipleChoiceQuestion,
+  Question,
+  RecallQuestion,
+} from './test-schema';
 
 export function localizeQuestion<Q extends Question>(
   question: Q,
   language: Language,
 ): Q {
+  if (question.template === 'recall') {
+    const text = question.i18n?.[language];
+    return text
+      ? ({ ...question, prompt: text.prompt } satisfies RecallQuestion as Q)
+      : question;
+  }
   if (question.template !== 'multiple_choice') return question;
   const text = question.i18n?.[language];
   if (!text) return question;
@@ -35,7 +45,7 @@ export function missingLanguages(
       !test.title_i18n?.[language] ||
       test.questions.some(
         (question) =>
-          question.template === 'multiple_choice' && !question.i18n?.[language],
+          question.template !== 'reading' && !question.i18n?.[language],
       ),
   );
 }
@@ -47,7 +57,7 @@ export function describeMistake(
 ): { prompt: string | null; answer: string; expected: string | null } {
   if (!question) return { prompt: null, answer, expected: null };
   const shown = localizeQuestion(question, language);
-  if (shown.template === 'reading') {
+  if (shown.template === 'reading' || shown.template === 'recall') {
     return {
       prompt: shown.prompt,
       answer,

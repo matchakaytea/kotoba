@@ -12,6 +12,7 @@ import { suggestColors } from '../../shared/palette';
 import { CustomSkinPanel } from '../CustomSkinPanel';
 import { cleanError } from '../format';
 import { useI18n } from '../i18n/i18n';
+import { DataPanel } from '../DataPanel';
 
 type Status = { ok: true } | { ok: false; error: string | null };
 
@@ -353,6 +354,8 @@ export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
           )}
         </div>
       </form>
+
+      <DataPanel />
     </div>
   );
 }

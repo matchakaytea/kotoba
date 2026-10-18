@@ -42,7 +42,7 @@ export function buildBrief(
           ?.english ?? 'English',
     },
     question_count: settings.questionCount,
-    supported_templates: ['reading', 'multiple_choice'],
+    supported_templates: ['reading', 'multiple_choice', 'recall'],
     due_targets: due.slice(0, MAX_DUE_TARGETS).map((target) => ({
       expression: target.expression,
       reading: target.reading,
@@ -91,13 +91,16 @@ Rules:
 - Write about ${brief.question_count} questions using only these templates: ${brief.supported_templates.join(', ')}.
 - Cover every target in "due_targets" first, starting with overdue ones and recent mistakes. Test each one in a fresh way or a new context sentence, not word for word as before.
 ${newWordsRule(brief)}
-- Every question lists its targets: { expression, reading, skill }. Use skill "reading" for reading questions and "meaning" for multiple-choice meaning questions.
+- Every question lists its targets: { expression, reading, skill }. Use skill "reading" for reading questions, "meaning" for multiple-choice meaning questions and "production" for recall questions.
+- Mix the templates. Make about a third of the questions recall, preferring words the learner has already seen (due targets) over brand-new ones.
 - reading: "prompt" is the word in kanji, "answers" lists every valid reading in hiragana only. Add a "context" sentence when the reading depends on it.
 - multiple_choice: 4 options, exactly one correct, no duplicates, plausible distractors.
+- recall: the learner sees the meaning and types the Japanese word. "prompt" is the meaning (or a short definition) and must not contain the word or its reading. Add a "context" sentence in Japanese with the word replaced by ＿＿ when the meaning alone is ambiguous. "answers" lists the word as written and every valid reading in hiragana (at least one hiragana reading).
 - Language: write every question prompt, every option that is a meaning or explanation, and the "title" in ${brief.learner.prompt_language}. Japanese words, readings, example sentences and "context" stay in Japanese. Never write prompts or meanings in English unless the language above is English.
 - Translations: the learner can switch the app language, so also fill in ${TRANSLATION_KEYS}:
   - "title_i18n": the title in each language.
   - "i18n" on every multiple_choice question: { "prompt": ..., "options": [...] } per language. Include "options" only when the options are meanings or explanations, in the same order as "options". Leave it out when the options are Japanese words.
+  - "i18n" on every recall question: { "prompt": ... } per language.
   - Japanese words, readings and sentences stay in Japanese in every language.
 - Use "test_id": "claude-${brief.date}-" followed by 4 random letters, and a short descriptive "title".
 - Double-check every reading. A wrong answer key teaches the wrong thing.
@@ -127,6 +130,7 @@ Return ONLY the complete test as one JSON object. No explanation, no Markdown co
 Add these languages: ${wanted}.
 - "title_i18n": add the title in each of these languages.
 - "i18n" on every multiple_choice question: add { "prompt": ..., "options": [...] } for each of these languages. Include "options" only when the options are meanings or explanations, in the same order as "options". Leave it out when the options are Japanese words.
+- "i18n" on every recall question: add { "prompt": ... } for each of these languages.
 - Japanese words, readings and sentences stay in Japanese in every language.
 
 Do not change anything else, character for character: every other field, existing translations, the order and number of questions, "answer_index", "targets", and reading questions.

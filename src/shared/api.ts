@@ -7,7 +7,7 @@ export { Language, LANGUAGES };
 export const AttemptInput = z.strictObject({
   testId: z.string().min(1).max(200),
   questionIndex: z.number().int().min(0),
-  template: z.enum(['multiple_choice', 'reading']),
+  template: z.enum(['multiple_choice', 'reading', 'recall']),
   answer: z.string().max(500),
   correct: z.boolean(),
   targets: z.array(Target).min(1).max(20),
@@ -168,6 +168,10 @@ export interface KotobaApi {
   getVocabSummary(): Promise<VocabLevelSummary[]>;
   searchVocab(query: VocabQuery): Promise<VocabPage>;
   getOtherWords(): Promise<OtherWord[]>;
+  backupData(): Promise<string | null>;
+  pickBackup(): Promise<BackupChoice | null>;
+  restoreData(): Promise<void>;
+  openDataFolder(): Promise<void>;
 }
 
 export type VocabTier = 'high' | 'mid' | 'low';
@@ -221,6 +225,14 @@ export const VocabQuery = z.strictObject({
 export type VocabQuery = z.infer<typeof VocabQuery>;
 
 export type VocabRow = VocabEntry & { status: WordStatus };
+
+/** A backup file picked for restoring, and what it holds. */
+export type BackupChoice = {
+  name: string;
+  tests: number;
+  answers: number;
+  words: number;
+};
 
 /** A word you have practised that is not in Vocabulary. */
 export type OtherWord = {

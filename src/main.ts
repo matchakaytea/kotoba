@@ -85,6 +85,7 @@ app.whenReady().then(() => {
     db,
     dirs: inboxDirs(userData),
     workDir: path.join(userData, 'claude-work'),
+    dataDir: userData,
     isTrustedSender: (event) =>
       mainWindow !== null &&
       event.sender === mainWindow.webContents &&

@@ -1,4 +1,5 @@
 import {
+  app,
   clipboard,
   dialog,
   ipcMain,
@@ -45,11 +46,13 @@ import {
   wordStatuses,
 } from './vocab';
 import { localDay } from './scheduler';
+import { backupDatabase, readBackup, restoreDatabase } from './backup';
 
 type Context = {
   db: DatabaseSync;
   dirs: InboxDirs;
   workDir: string;
+  dataDir: string;
   isTrustedSender: (event: IpcMainInvokeEvent) => boolean;
 };
 
@@ -72,6 +75,7 @@ export function registerIpcHandlers({
   db,
   dirs,
   workDir,
+  dataDir,
   isTrustedSender,
 }: Context): void {
   function handle(
@@ -141,6 +145,49 @@ export function registerIpcHandlers({
   handle('inbox:open', async () => {
     ensureInboxDirs(dirs);
     const error = await shell.openPath(dirs.inbox);
+    if (error) throw new Error(error);
+  });
+
+  handle('data:backup', async () => {
+    const result = await dialog.showSaveDialog({
+      defaultPath: path.join(
+        app.getPath('documents'),
+        `kotoba-backup-${localDay(new Date())}.db`,
+      ),
+      filters: [{ name: 'Kotoba backup', extensions: ['db'] }],
+    });
+    if (result.canceled || !result.filePath) return null;
+    backupDatabase(db, result.filePath);
+    return result.filePath;
+  });
+
+  // The file picked for restoring waits here until the learner confirms.
+  let pendingRestore: string | null = null;
+
+  handle('data:pickRestore', async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ['openFile'],
+      filters: [{ name: 'Kotoba backup', extensions: ['db'] }],
+    });
+    const file = result.filePaths[0];
+    if (result.canceled || !file) return null;
+    const info = readBackup(file);
+    pendingRestore = file;
+    return { name: path.basename(file), ...info };
+  });
+
+  handle('data:restore', () => {
+    if (!pendingRestore) throw new Error('Choose a backup first.');
+    const backups = path.join(dataDir, 'backups');
+    fs.mkdirSync(backups, { recursive: true });
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    backupDatabase(db, path.join(backups, `before-restore-${stamp}.db`));
+    restoreDatabase(db, pendingRestore);
+    pendingRestore = null;
+  });
+
+  handle('data:openFolder', async () => {
+    const error = await shell.openPath(dataDir);
     if (error) throw new Error(error);
   });
 

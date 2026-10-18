@@ -6,7 +6,7 @@ import { formatTimestamp } from '../format';
 import { useI18n } from '../i18n/i18n';
 
 function answersAreJapanese(question: Question | null, language: Language) {
-  if (!question || question.template === 'reading') return true;
+  if (!question || question.template !== 'multiple_choice') return true;
   return (
     !question.i18n?.[language]?.options &&
     /[぀-ヿ]|[一-鿿]/.test(question.options.join(''))

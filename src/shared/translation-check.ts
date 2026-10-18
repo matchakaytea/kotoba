@@ -26,9 +26,9 @@ function withoutNewTranslations(test: LangTest, languages: Language[]) {
     ...test,
     title_i18n: strip(test.title_i18n),
     questions: test.questions.map((question: Question) =>
-      question.template === 'multiple_choice'
-        ? { ...question, i18n: strip(question.i18n) }
-        : question,
+      question.template === 'reading'
+        ? question
+        : { ...question, i18n: strip(question.i18n) },
     ),
   });
 }
@@ -66,6 +66,14 @@ export function checkAddedTranslations(
 
   original.questions.forEach((before, i) => {
     const after = updated.questions[i];
+    if (before.template === 'recall' && after.template === 'recall') {
+      for (const language of languages) {
+        if (!after.i18n?.[language]) {
+          problems.push(`Question ${i + 1}: ${language} missing`);
+        }
+      }
+      return;
+    }
     if (
       before.template !== 'multiple_choice' ||
       after.template !== 'multiple_choice'

@@ -60,9 +60,27 @@ export const ReadingQuestion = z.strictObject({
   targets: z.array(Target).min(1),
 });
 
+// Production: the learner sees the meaning and types the word.
+export const RecallQuestion = z
+  .strictObject({
+    template: z.literal('recall'),
+    prompt: z.string().min(1),
+    context: z.string().min(1).optional(),
+    answers: z.array(z.string().min(1)).min(1),
+    targets: z.array(Target).min(1),
+    i18n: z
+      .partialRecord(Language, z.strictObject({ prompt: z.string().min(1) }))
+      .optional(),
+  })
+  .refine((q) => q.answers.some((answer) => KANA.test(answer)), {
+    error: 'answers must include the reading in kana',
+    path: ['answers'],
+  });
+
 export const Question = z.discriminatedUnion('template', [
   MultipleChoiceQuestion,
   ReadingQuestion,
+  RecallQuestion,
 ]);
 
 export const LangTest = z.strictObject({
@@ -79,4 +97,5 @@ export type Target = z.infer<typeof Target>;
 export type MultipleChoiceQuestion = z.infer<typeof MultipleChoiceQuestion>;
 export type LangTest = z.infer<typeof LangTest>;
 export type ReadingQuestion = z.infer<typeof ReadingQuestion>;
+export type RecallQuestion = z.infer<typeof RecallQuestion>;
 export type Question = z.infer<typeof Question>;

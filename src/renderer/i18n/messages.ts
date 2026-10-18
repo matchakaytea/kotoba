@@ -164,6 +164,16 @@ const en = {
   'settings.topics': 'Topics',
   'settings.topicsHint': 'Separate topics with commas.',
   'settings.questionCount': 'Questions per test',
+  'data.title': 'Your data',
+  'data.sub':
+    'Your progress is stored only on this computer. Back it up to keep it safe or to move it to another PC.',
+  'data.backup': 'Back up…',
+  'data.restoreFrom': 'Restore from a backup…',
+  'data.openFolder': 'Open data folder',
+  'data.saved': 'Backed up to {file}',
+  'data.confirm':
+    'Replace your data with {name}? It has {tests} tests, {answers} answers and {words} words. Your current data is saved in the data folder first.',
+  'data.restore': 'Restore',
   'settings.save': 'Save settings',
   'settings.saved': 'Saved. The next test will use these.',
   'settings.invalid':
@@ -179,6 +189,7 @@ const en = {
   'review.backToToday': 'Back to Today',
   'review.saveError': 'Could not save this answer: {error}',
   'review.readingPlaceholder': 'Type the reading (romaji is fine)',
+  'review.recallPlaceholder': 'Type the Japanese word (romaji is fine)',
 
   'feedback.correct': '✓ Correct',
   'feedback.answer': '✗ Answer:',
@@ -359,6 +370,16 @@ const zhHans: Messages = {
   'settings.topics': '主题',
   'settings.topicsHint': '用逗号分隔多个主题。',
   'settings.questionCount': '每套测试的题数',
+  'data.title': '你的数据',
+  'data.sub':
+    '你的学习进度只保存在这台电脑上。备份可以防止丢失，也可以把它搬到另一台电脑。',
+  'data.backup': '备份…',
+  'data.restoreFrom': '从备份恢复…',
+  'data.openFolder': '打开数据文件夹',
+  'data.saved': '已备份到 {file}',
+  'data.confirm':
+    '用 {name} 替换你的数据吗？其中有 {tests} 套测试、{answers} 次作答和 {words} 个单词。你现在的数据会先保存在数据文件夹里。',
+  'data.restore': '恢复',
   'settings.save': '保存设置',
   'settings.saved': '已保存。下一套测试将使用这些设置。',
   'settings.invalid': '请填写水平和至少一个主题。每套测试的题数为 5 到 40。',
@@ -372,6 +393,7 @@ const zhHans: Messages = {
   'review.backToToday': '返回今天',
   'review.saveError': '无法保存这次作答：{error}',
   'review.readingPlaceholder': '输入读音（可以用罗马字）',
+  'review.recallPlaceholder': '输入这个日语单词（可以用罗马字）',
 
   'feedback.correct': '✓ 正确',
   'feedback.answer': '✗ 答案：',
@@ -538,6 +560,16 @@ const zhHant: Messages = {
   'settings.topics': '主題',
   'settings.topicsHint': '用逗號分隔多個主題。',
   'settings.questionCount': '每份測驗的題數',
+  'data.title': '你的資料',
+  'data.sub':
+    '你的學習進度只儲存在這台電腦上。備份可以防止遺失，也可以把它搬到另一台電腦。',
+  'data.backup': '備份…',
+  'data.restoreFrom': '從備份還原…',
+  'data.openFolder': '開啟資料夾',
+  'data.saved': '已備份到 {file}',
+  'data.confirm':
+    '要用 {name} 取代你的資料嗎？其中有 {tests} 份測驗、{answers} 次作答和 {words} 個單字。你現在的資料會先儲存在資料夾裡。',
+  'data.restore': '還原',
   'settings.save': '儲存設定',
   'settings.saved': '已儲存。下一份測驗將使用這些設定。',
   'settings.invalid': '請填寫程度和至少一個主題。每份測驗的題數為 5 到 40。',
@@ -551,6 +583,7 @@ const zhHant: Messages = {
   'review.backToToday': '返回今天',
   'review.saveError': '無法儲存這次作答：{error}',
   'review.readingPlaceholder': '輸入讀音（可以用羅馬拼音）',
+  'review.recallPlaceholder': '輸入這個日語單字（可以用羅馬拼音）',
 
   'feedback.correct': '✓ 正確',
   'feedback.answer': '✗ 答案：',
@@ -726,6 +759,16 @@ const ko: Messages = {
   'settings.topics': '주제',
   'settings.topicsHint': '주제는 쉼표로 구분하세요.',
   'settings.questionCount': '테스트당 문제 수',
+  'data.title': '내 데이터',
+  'data.sub':
+    '학습 기록은 이 컴퓨터에만 저장됩니다. 잃어버리지 않도록 백업하거나 다른 PC로 옮길 수 있습니다.',
+  'data.backup': '백업…',
+  'data.restoreFrom': '백업에서 복원…',
+  'data.openFolder': '데이터 폴더 열기',
+  'data.saved': '{file}에 백업했습니다',
+  'data.confirm':
+    '{name}(으)로 데이터를 바꿀까요? 테스트 {tests}개, 답변 {answers}개, 단어 {words}개가 들어 있습니다. 현재 데이터는 먼저 데이터 폴더에 저장됩니다.',
+  'data.restore': '복원',
   'settings.save': '설정 저장',
   'settings.saved': '저장했습니다. 다음 테스트부터 적용됩니다.',
   'settings.invalid':
@@ -741,6 +784,7 @@ const ko: Messages = {
   'review.backToToday': '오늘로 돌아가기',
   'review.saveError': '이 답변을 저장하지 못했습니다: {error}',
   'review.readingPlaceholder': '읽는 법을 입력하세요 (로마자 가능)',
+  'review.recallPlaceholder': '일본어 단어를 입력하세요 (로마자 가능)',
 
   'feedback.correct': '✓ 정답',
   'feedback.answer': '✗ 정답:',

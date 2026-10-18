@@ -1182,3 +1182,17 @@ select:disabled {
 .vocab-others h2 {
   margin-bottom: 4px;
 }
+
+.data-panel {
+  margin-top: 40px;
+  max-width: 640px;
+}
+
+.data-panel h2 {
+  margin-bottom: 4px;
+}
+
+.data-panel .form-actions,
+.data-panel .confirm {
+  margin-top: 12px;
+}
