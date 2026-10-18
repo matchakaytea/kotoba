@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 import {
   DEFAULT_SETTINGS,
@@ -153,7 +152,7 @@ export function recordAttempt(
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
-        randomUUID(),
+        crypto.randomUUID(),
         input.testId,
         input.questionIndex,
         input.template,

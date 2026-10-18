@@ -40,7 +40,11 @@ export function Sidebar({ current, onSelect }: Props) {
         <span className="brand-name">Kotoba</span>
       </div>
       <ul className="nav">
-        {PAGES.map((entry) => (
+        {PAGES.filter(
+          // The inbox is a folder on the PC, so the web version has none.
+          (entry) =>
+            entry.page !== 'inbox' || window.kotoba.platform === 'desktop',
+        ).map((entry) => (
           <NavItem
             key={entry.page}
             entry={entry}

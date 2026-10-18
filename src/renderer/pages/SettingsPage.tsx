@@ -397,7 +397,7 @@ export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
       </form>
 
       <SyncPanel />
-      <DataPanel />
+      {window.kotoba.platform === 'desktop' && <DataPanel />}
     </div>
   );
 }

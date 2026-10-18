@@ -1,5 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite';
 import type {
+  Mistake,
   OtherWord,
   VocabEntry,
   VocabLevelSummary,
@@ -183,4 +184,16 @@ export function otherWords(
       reading: row.reading ?? undefined,
       status: statuses.get(row.expression) ?? 'new',
     }));
+}
+
+// A mistake whose test was deleted has no answer key; show the reading from
+// Vocabulary instead.
+export function withReadings(mistakes: Mistake[]): Mistake[] {
+  return mistakes.map((mistake) => {
+    if (mistake.question) return mistake;
+    const readings = mistake.targets
+      .map((target) => readingOf(target))
+      .filter((reading): reading is string => Boolean(reading));
+    return readings.length > 0 ? { ...mistake, readings } : mistake;
+  });
 }

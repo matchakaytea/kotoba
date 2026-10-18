@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 import type { KotobaApi } from './shared/api';
 
 const api: KotobaApi = {
+  platform: 'desktop',
   saveAttempt: (input) => ipcRenderer.invoke('attempt:save', input),
   getSummary: () => ipcRenderer.invoke('summary:get'),
   getToday: () => ipcRenderer.invoke('today:get'),

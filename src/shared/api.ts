@@ -160,6 +160,8 @@ export type LibraryTest = {
 };
 
 export interface KotobaApi {
+  /** Desktop has the Claude CLI, files and dialogs; the web version doesn't. */
+  platform: 'desktop' | 'web';
   saveAttempt(input: AttemptInput): Promise<void>;
   getSummary(): Promise<Summary>;
   getToday(): Promise<Today>;
