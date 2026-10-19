@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/icon.png" alt="Kotoba icon" width="128">
+</p>
+
 # Kotoba 言葉
 
 Kotoba is a personal Japanese practice app. You generate short reading and
