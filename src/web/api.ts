@@ -18,6 +18,7 @@ import {
   saveSettings,
 } from '../main/database';
 import type { SyncManager } from '../main/sync/manager';
+import { notePictureSaved } from '../main/sync/sync';
 import {
   otherWords,
   searchVocab,
@@ -106,7 +107,12 @@ export function webApi(
       }
       return readAsDataUrl(file);
     },
-    saveSkinPicture: (dataUrl) => savePicture(dataUrl),
+    saveSkinPicture: async (dataUrl) => {
+      const type = /^data:image\/(jpeg|png|webp|gif|bmp);base64,/.exec(dataUrl);
+      if (!type) throw new Error('That is not a picture Kotoba can use.');
+      await savePicture(dataUrl);
+      notePictureSaved(db, type[1] === 'jpeg' ? 'jpg' : type[1]);
+    },
     getSkinPicture: () => loadPicture(),
     getVocabSummary: async () => vocabSummary(wordStatuses(db)),
     searchVocab: async (query) =>

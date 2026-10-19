@@ -6,7 +6,7 @@ import { migrate } from '../main/database';
 import { SyncManager } from '../main/sync/manager';
 import { webApi } from './api';
 import { WebDatabase } from './sqlite';
-import { loadDatabase, saveDatabase } from './storage';
+import { loadDatabase, saveDatabase, storedPicture } from './storage';
 
 // Starts Kotoba in a browser: opens the local copy of the data, gives the app
 // the same API the desktop window has, and syncs with the learner's
@@ -35,9 +35,13 @@ async function start() {
   window.addEventListener('pagehide', save);
 
   const listeners = new Set<() => void>();
-  const sync = new SyncManager(db, () => {
-    for (const listener of listeners) listener();
-  });
+  const sync = new SyncManager(
+    db,
+    () => {
+      for (const listener of listeners) listener();
+    },
+    storedPicture,
+  );
   // The web build can come with the Supabase project already set (the URL
   // and publishable key are safe to ship), so devices only need to sign in.
   const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;

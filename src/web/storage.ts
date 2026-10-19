@@ -1,5 +1,7 @@
 // The web version keeps its database file and skin picture in IndexedDB.
 
+import type { LocalPicture } from '../main/sync/sync';
+
 const DB_NAME = 'kotoba';
 const STORE = 'files';
 
@@ -36,3 +38,33 @@ export const saveDatabase = (bytes: Uint8Array) => put('kotoba.db', bytes);
 export const loadPicture = async () =>
   (await get<string>('skin-picture')) ?? null;
 export const savePicture = (dataUrl: string) => put('skin-picture', dataUrl);
+
+const PICTURE_TYPES: Record<string, string> = {
+  jpg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  gif: 'image/gif',
+  bmp: 'image/bmp',
+};
+
+function toBase64(bytes: Uint8Array): string {
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(binary);
+}
+
+/** The picture in browser storage, for syncing it to other devices. */
+export const storedPicture: LocalPicture = {
+  read: async () => {
+    const dataUrl = await loadPicture();
+    if (!dataUrl) return null;
+    return new Uint8Array(await (await fetch(dataUrl)).arrayBuffer());
+  },
+  write: async (bytes, name) => {
+    const type = PICTURE_TYPES[name.split('.').pop() ?? ''];
+    if (!type) throw new Error('Unknown picture type.');
+    await savePicture(`data:${type};base64,${toBase64(bytes)}`);
+  },
+};

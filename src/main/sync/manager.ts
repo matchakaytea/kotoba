@@ -2,7 +2,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { DatabaseSync } from 'node:sqlite';
 import { z } from 'zod';
 import type { SyncStatus } from '../../shared/api';
-import { runSync } from './sync';
+import { runSync, type LocalPicture } from './sync';
 import { supabaseStore } from './supabase';
 
 const AUTO_SYNC_DELAY_MS = 5_000;
@@ -36,6 +36,7 @@ export class SyncManager {
   constructor(
     private readonly db: DatabaseSync,
     private readonly onSynced: (downloaded: number) => void = () => {},
+    private readonly picture?: LocalPicture,
   ) {
     this.client = this.makeClient();
   }
@@ -144,7 +145,12 @@ export class SyncManager {
         const client = this.client;
         if (!client || !(await client.auth.getSession()).data.session) return;
         try {
-          const result = await runSync(this.db, supabaseStore(client));
+          const result = await runSync(
+            this.db,
+            supabaseStore(client),
+            new Date(),
+            this.picture,
+          );
           this.lastError = null;
           if (result.downloaded > 0) this.onSynced(result.downloaded);
         } catch (error) {

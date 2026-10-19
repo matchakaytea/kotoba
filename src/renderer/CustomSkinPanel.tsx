@@ -3,6 +3,7 @@ import type { Backdrop } from '../shared/api';
 import type { CustomColors, Swatch, ThemeMode } from '../shared/palette';
 import { cleanError } from './format';
 import { useI18n } from './i18n/i18n';
+import { shrinkPicture } from './shrink-picture';
 import { swatchesFromPicture } from './theme';
 
 type Props = {
@@ -33,9 +34,10 @@ export function CustomSkinPanel({
   async function choosePicture() {
     setError(null);
     try {
-      const dataUrl = await window.kotoba.pickPicture();
-      if (!dataUrl) return;
+      const picked = await window.kotoba.pickPicture();
+      if (!picked) return;
       setReading(true);
+      const dataUrl = await shrinkPicture(picked);
       const found = await swatchesFromPicture(dataUrl);
       if (found.length === 0) throw new Error(t('custom.error'));
       onPicture(found, dataUrl);

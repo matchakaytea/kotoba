@@ -62,3 +62,18 @@ create policy "own settings" on public.kotoba_settings for all to authenticated
 grant select, insert, update, delete on public.kotoba_attempts to authenticated;
 grant select, insert, update, delete on public.kotoba_tests to authenticated;
 grant select, insert, update, delete on public.kotoba_settings to authenticated;
+
+-- Skin pictures (wallpapers) are files in a private storage bucket. Each user
+-- gets a folder named after their user id and can only touch that folder.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('kotoba-pictures', 'kotoba-pictures', false, 5242880,
+        array['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/bmp'])
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "own kotoba pictures" on storage.objects;
+create policy "own kotoba pictures" on storage.objects for all to authenticated
+  using (bucket_id = 'kotoba-pictures' and (storage.foldername(name))[1] = auth.uid()::text)
+  with check (bucket_id = 'kotoba-pictures' and (storage.foldername(name))[1] = auth.uid()::text);

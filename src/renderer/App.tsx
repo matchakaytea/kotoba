@@ -42,20 +42,23 @@ export function App() {
 
   useEffect(() => window.kotoba.onSynced(() => setSynced((n) => n + 1)), []);
 
+  // Loads again after a sync, which may bring another device's skin and
+  // picture.
   useEffect(() => {
-    window.kotoba
-      .getSettings()
-      .then((settings) => {
+    Promise.all([window.kotoba.getSettings(), window.kotoba.getSkinPicture()])
+      .then(([settings, picture]) => {
         setLanguage(settings.language);
         setSkin({
           theme: settings.theme,
           colors: settings.customColors,
           backdrop: settings.backdrop,
+          picture,
         });
-        return window.kotoba.getSkinPicture();
       })
-      .then((picture) => setSkin((current) => ({ ...current, picture })))
       .catch(() => setLanguage('en'));
+  }, [synced]);
+
+  useEffect(() => {
     window.kotoba
       .claudeStatus()
       .then((status) => setClaudeAvailable(status.found));

@@ -7,6 +7,15 @@ const CHUNK = 500;
 // Rows written while another device was pulling can carry a slightly older
 // time; looking back a minute catches them. Applying a row twice is harmless.
 const OVERLAP_MS = 60_000;
+// Skin pictures go in this private bucket, one folder per user.
+const BUCKET = 'kotoba-pictures';
+const PICTURE_TYPES: Record<string, string> = {
+  jpg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  gif: 'image/gif',
+  bmp: 'image/bmp',
+};
 
 function check<T>(result: { data: T; error: { message: string } | null }): T {
   if (result.error) throw new Error(result.error.message);
@@ -35,6 +44,12 @@ async function pullTable<T>(
     if (page.length < PAGE) break;
   }
   return { rows, newest };
+}
+
+async function pictureFolder(client: SupabaseClient): Promise<string> {
+  const { data } = await client.auth.getSession();
+  if (!data.session) throw new Error('Sign in to sync the picture.');
+  return data.session.user.id;
 }
 
 /** The shared copy kept in the learner's own Supabase project. */
@@ -97,6 +112,32 @@ export function supabaseStore(client: SupabaseClient): RemoteStore {
         },
         cursor: newest ?? new Date(0).toISOString(),
       };
+    },
+
+    async uploadPicture(name, bytes) {
+      const folder = await pictureFolder(client);
+      const storage = client.storage.from(BUCKET);
+      check(
+        await storage.upload(`${folder}/${name}`, bytes, {
+          contentType: PICTURE_TYPES[name.split('.').pop() ?? ''],
+          upsert: true,
+        }),
+      );
+      // Only the newest picture is needed; remove the ones it replaced.
+      const files = check(await storage.list(folder)) ?? [];
+      const old = files
+        .filter((file) => file.name !== name)
+        .map((file) => `${folder}/${file.name}`);
+      if (old.length > 0) check(await storage.remove(old));
+    },
+
+    async downloadPicture(name) {
+      const folder = await pictureFolder(client);
+      const blob = check(
+        await client.storage.from(BUCKET).download(`${folder}/${name}`),
+      );
+      if (!blob) throw new Error('The picture is missing from storage.');
+      return new Uint8Array(await blob.arrayBuffer());
     },
   };
 }

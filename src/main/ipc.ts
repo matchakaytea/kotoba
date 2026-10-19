@@ -55,6 +55,7 @@ import { localDay } from './scheduler';
 import { backupDatabase, readBackup, restoreDatabase } from './backup';
 import { readSkinPicture, saveSkinPicture } from './skin-picture';
 import type { SyncManager } from './sync/manager';
+import { notePictureSaved } from './sync/sync';
 import type { Updater } from './updater';
 
 type Context = {
@@ -203,9 +204,13 @@ export function registerIpcHandlers({
     pendingRestore = null;
   });
 
-  handle('skin:savePicture', (_event, payload) =>
-    saveSkinPicture(dataDir, z.string().max(25_000_000).parse(payload)),
-  );
+  handle('skin:savePicture', (_event, payload) => {
+    const extension = saveSkinPicture(
+      dataDir,
+      z.string().max(25_000_000).parse(payload),
+    );
+    notePictureSaved(db, extension);
+  });
   handle('skin:picture', () => readSkinPicture(dataDir));
 
   handle('data:openFolder', async () => {

@@ -21,7 +21,12 @@ export type SyncedTest = {
   deleted: boolean;
 };
 
-export type SyncedSettings = { body: Settings; changed_at: string };
+export type SyncedSettings = {
+  body: Settings;
+  changed_at: string;
+  /** The name of the skin picture in storage; older versions leave it out. */
+  picture?: string | null;
+};
 
 export type Changes = {
   attempts: SyncedAttempt[];
@@ -34,6 +39,25 @@ export interface RemoteStore {
   push(changes: Changes): Promise<void>;
   /** Everything changed after `cursor`, and the cursor to use next time. */
   pull(cursor: string | null): Promise<{ changes: Changes; cursor: string }>;
+  uploadPicture(name: string, bytes: Uint8Array): Promise<void>;
+  downloadPicture(name: string): Promise<Uint8Array>;
+}
+
+/** The skin picture as this device keeps it (a file, or browser storage). */
+export interface LocalPicture {
+  read(): Promise<Uint8Array | null>;
+  write(bytes: Uint8Array, name: string): Promise<void>;
+}
+
+// Picture names look like <uuid>.jpg, so a new picture never reuses a name.
+const PICTURE_NAME = /^[0-9a-f-]{36}\.(jpg|png|webp|gif|bmp)$/;
+
+/**
+ * Gives a newly saved skin picture its name. The next settings sync uploads
+ * it and tells the other devices to download it.
+ */
+export function notePictureSaved(db: DatabaseSync, extension: string): void {
+  writeKey(db, 'skin_picture', `${crypto.randomUUID()}.${extension}`);
 }
 
 export type SyncResult = {
@@ -94,7 +118,11 @@ export function localChanges(db: DatabaseSync): Changes {
   const pushedAt = readKey(db, 'sync_settings_at');
   const settings =
     changedAt && changedAt !== pushedAt
-      ? { body: getSettings(db), changed_at: changedAt }
+      ? {
+          body: getSettings(db),
+          changed_at: changedAt,
+          picture: readKey(db, 'skin_picture'),
+        }
       : null;
 
   return { attempts: unsyncedAttempts(db), tests, settings };
@@ -146,6 +174,15 @@ export function applyRemote(db: DatabaseSync, changes: Changes): number {
       writeKey(db, 'learner', JSON.stringify(parsed.data));
       writeKey(db, 'learner_changed_at', changes.settings.changed_at);
       writeKey(db, 'sync_settings_at', changes.settings.changed_at);
+      // The picture itself is downloaded after this, by runSync.
+      const picture = changes.settings.picture;
+      if (
+        picture &&
+        PICTURE_NAME.test(picture) &&
+        picture !== readKey(db, 'skin_picture')
+      ) {
+        writeKey(db, 'skin_picture_wanted', picture);
+      }
       changed++;
     }
   }
@@ -157,8 +194,12 @@ export async function runSync(
   db: DatabaseSync,
   store: RemoteStore,
   now = new Date(),
+  picture?: LocalPicture,
 ): Promise<SyncResult> {
   const outgoing = localChanges(db);
+  if (outgoing.settings?.picture) {
+    await uploadPicture(db, store, outgoing.settings, picture);
+  }
   const uploaded =
     outgoing.attempts.length +
     outgoing.tests.length +
@@ -169,9 +210,47 @@ export async function runSync(
   }
 
   const { changes, cursor } = await store.pull(readKey(db, 'sync_cursor'));
-  const downloaded = applyRemote(db, changes);
+  let downloaded = applyRemote(db, changes);
+  if (picture && (await downloadPicture(db, store, picture))) downloaded++;
   writeKey(db, 'sync_cursor', cursor);
   const at = now.toISOString();
   writeKey(db, 'sync_last', at);
   return { uploaded, downloaded, at };
+}
+
+/** Uploads the skin picture once, before the settings that point to it. */
+async function uploadPicture(
+  db: DatabaseSync,
+  store: RemoteStore,
+  settings: SyncedSettings,
+  picture: LocalPicture | undefined,
+): Promise<void> {
+  const name = settings.picture;
+  if (!name || readKey(db, 'skin_picture_uploaded') === name) return;
+  const bytes = picture ? await picture.read() : null;
+  if (!bytes) {
+    // Nothing to send, so don't point the other devices at it.
+    settings.picture = null;
+    return;
+  }
+  await store.uploadPicture(name, bytes);
+  writeKey(db, 'skin_picture_uploaded', name);
+}
+
+/** Downloads a skin picture another device chose. Returns whether it did. */
+async function downloadPicture(
+  db: DatabaseSync,
+  store: RemoteStore,
+  picture: LocalPicture,
+): Promise<boolean> {
+  const wanted = readKey(db, 'skin_picture_wanted');
+  if (!wanted) return false;
+  if (wanted !== readKey(db, 'skin_picture')) {
+    // If this fails, the wanted name stays and the next sync tries again.
+    await picture.write(await store.downloadPicture(wanted), wanted);
+    writeKey(db, 'skin_picture', wanted);
+    writeKey(db, 'skin_picture_uploaded', wanted);
+  }
+  db.prepare("DELETE FROM settings WHERE key = 'skin_picture_wanted'").run();
+  return true;
 }

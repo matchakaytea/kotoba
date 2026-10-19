@@ -13,13 +13,30 @@ import {
   saveSettings,
   saveTest,
 } from '../database';
-import { runSync, type Changes, type RemoteStore } from './sync';
+import {
+  notePictureSaved,
+  runSync,
+  type Changes,
+  type LocalPicture,
+  type RemoteStore,
+} from './sync';
 
 /** A shared store kept in memory, like Supabase with one user. */
-function memoryStore(): RemoteStore {
+function memoryStore(): RemoteStore & { pictures: Map<string, Uint8Array> } {
   const rows: { at: number; changes: Changes }[] = [];
+  const pictures = new Map<string, Uint8Array>();
   let clock = 0;
   return {
+    pictures,
+    async uploadPicture(name, bytes) {
+      pictures.clear();
+      pictures.set(name, bytes);
+    },
+    async downloadPicture(name) {
+      const bytes = pictures.get(name);
+      if (!bytes) throw new Error('missing');
+      return bytes;
+    },
     async push(changes) {
       rows.push({ at: ++clock, changes: structuredClone(changes) });
     },
@@ -70,7 +87,7 @@ function answer(db: DatabaseSync, correct: boolean, when: Date) {
 
 let pc: DatabaseSync;
 let phone: DatabaseSync;
-let store: RemoteStore;
+let store: ReturnType<typeof memoryStore>;
 beforeEach(() => {
   pc = openDatabase(':memory:');
   phone = openDatabase(':memory:');
@@ -144,4 +161,54 @@ describe('sync between two devices', () => {
     await runSync(pc, store);
     expect(getSettings(pc).questionCount).toBe(25);
   });
+
+  it('sends a new skin picture to the other device once', async () => {
+    const pcPicture = memoryPicture(new Uint8Array([1, 2, 3]));
+    const phonePicture = memoryPicture(null);
+    notePictureSaved(pc, 'jpg');
+    saveSettings(pc, { ...getSettings(pc), theme: 'custom' });
+
+    await runSync(pc, store, new Date(), pcPicture);
+    expect([...store.pictures.values()]).toEqual([new Uint8Array([1, 2, 3])]);
+
+    expect(await runSync(phone, store, new Date(), phonePicture)).toMatchObject(
+      { downloaded: 2 },
+    );
+    expect(phonePicture.bytes).toEqual(new Uint8Array([1, 2, 3]));
+
+    // Nothing changed since, so nothing is sent or fetched again.
+    phonePicture.writes = 0;
+    await runSync(pc, store, new Date(), pcPicture);
+    await runSync(phone, store, new Date(), phonePicture);
+    expect(phonePicture.writes).toBe(0);
+  });
+
+  it('keeps the picture when the other device runs an older version', async () => {
+    const phonePicture = memoryPicture(new Uint8Array([9]));
+    notePictureSaved(phone, 'jpg');
+    saveSettings(phone, { ...getSettings(phone), theme: 'custom' });
+    await runSync(phone, store, new Date(), phonePicture);
+    await new Promise((r) => setTimeout(r, 5));
+    // An older PC sends settings without a picture name.
+    saveSettings(pc, { ...getSettings(pc), questionCount: 20 });
+    await runSync(pc, store);
+    await runSync(phone, store, new Date(), phonePicture);
+    expect(phonePicture.bytes).toEqual(new Uint8Array([9]));
+    expect(getSettings(phone).questionCount).toBe(20);
+  });
 });
+
+function memoryPicture(
+  bytes: Uint8Array | null,
+): LocalPicture & { bytes: Uint8Array | null; writes: number } {
+  const picture = {
+    bytes,
+    writes: 0,
+    read: async () => picture.bytes,
+    write: async (next: Uint8Array) => {
+      picture.bytes = next;
+      picture.writes++;
+    },
+  };
+  return picture;
+}

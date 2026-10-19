@@ -6,6 +6,7 @@ import { buildPalette } from './shared/palette';
 import { getSettings, openDatabase } from './main/database';
 import { inboxDirs } from './main/inbox';
 import { registerIpcHandlers } from './main/ipc';
+import { skinPictureFile } from './main/skin-picture';
 import { SyncManager } from './main/sync/manager';
 import { Updater } from './main/updater';
 import {
@@ -84,8 +85,10 @@ app.whenReady().then(() => {
   app.on('will-quit', () => db.close());
   // Syncs with the learner's Supabase project, if they set one up, and tells
   // the window when it brought in changes from another device.
-  const sync = new SyncManager(db, () =>
-    mainWindow?.webContents.send('sync:changed'),
+  const sync = new SyncManager(
+    db,
+    () => mainWindow?.webContents.send('sync:changed'),
+    skinPictureFile(userData),
   );
   // Offers newer versions from GitHub Releases and installs them on request.
   const updater = new Updater((state) =>
