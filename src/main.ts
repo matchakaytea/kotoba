@@ -79,7 +79,7 @@ const createWindow = (backgroundColor: string) => {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   const userData = app.getPath('userData');
   const db = openDatabase(path.join(userData, 'kotoba.db'));
   app.on('will-quit', () => db.close());
@@ -107,6 +107,14 @@ app.whenReady().then(() => {
       event.sender === mainWindow.webContents &&
       event.senderFrame === mainWindow.webContents.mainFrame,
   });
+
+  // Like the web build, the desktop app comes with the Supabase project set
+  // (the URL and publishable key are safe to ship), so only signing in is
+  // left to do.
+  const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  const key = import.meta.env.VITE_SUPABASE_KEY as string | undefined;
+  if (url && key && !(await sync.status()).url)
+    await sync.configure({ url, key });
 
   const background = () => windowBackground(getSettings(db));
   createWindow(background());

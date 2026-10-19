@@ -105,6 +105,12 @@ export function registerIpcHandlers({
     return unseen;
   }
 
+  async function requireSignIn(): Promise<void> {
+    if (!(await sync.signedIn())) {
+      throw new Error('Sign in to make and keep tests.');
+    }
+  }
+
   async function askClaude(prompt: string): Promise<string> {
     if (claudeBusy) throw new Error('Claude is already working on something.');
     const claude = findClaude();
@@ -119,23 +125,32 @@ export function registerIpcHandlers({
     }
   }
 
-  handle('attempt:save', (_event, payload) => {
-    recordAttempt(db, AttemptInput.parse(payload));
+  // Signed out, nothing the learner does is kept (see SyncManager.signedIn).
+  handle('attempt:save', async (_event, payload) => {
+    const input = AttemptInput.parse(payload);
+    if (!(await sync.signedIn())) return;
+    recordAttempt(db, input);
     sync.schedule();
   });
   handle('summary:get', () => getSummary(db));
   handle('today:get', () => getToday(db));
   handle('session:get', () => buildSession(db));
   handle('mistakes:get', () => withReadings(getMistakes(db)));
-  handle('mistakes:dismiss', (_event, payload) => {
-    dismissMistake(db, z.number().int().parse(payload));
-    sync.schedule();
+  handle('mistakes:dismiss', async (_event, payload) => {
+    const id = z.number().int().parse(payload);
+    if (await sync.signedIn()) {
+      dismissMistake(db, id);
+      sync.schedule();
+    }
     return withReadings(getMistakes(db));
   });
   handle('library:get', () => getLibrary(db));
-  handle('library:delete', (_event, payload) => {
-    deleteTest(db, TestId.parse(payload));
-    sync.schedule();
+  handle('library:delete', async (_event, payload) => {
+    const testId = TestId.parse(payload);
+    if (await sync.signedIn()) {
+      deleteTest(db, testId);
+      sync.schedule();
+    }
     return getLibrary(db);
   });
   handle('settings:get', () => getSettings(db));
@@ -154,7 +169,12 @@ export function registerIpcHandlers({
   handle('update:state', () => updater.current());
   handle('update:check', () => updater.check());
   handle('update:install', () => updater.install());
-  handle('inbox:import', () => importAndRemember());
+  // Test files wait in the inbox until someone signs in.
+  handle('inbox:import', async () =>
+    (await sync.signedIn())
+      ? importAndRemember()
+      : { imported: [], rejected: [] },
+  );
 
   handle('inbox:dismiss', () => {
     unseen = { imported: [], rejected: [] };
@@ -251,6 +271,7 @@ export function registerIpcHandlers({
   handle('claude:status', () => ({ found: findClaude() !== null }));
 
   handle('claude:generate', async () => {
+    await requireSignIn();
     const brief = buildBrief(db);
     let reply = await askClaude(briefPrompt(brief));
     let missing = missingNewWords(brief, reply);
@@ -276,6 +297,7 @@ export function registerIpcHandlers({
   });
 
   handle('library:translate', async (_event, payload) => {
+    await requireSignIn();
     const stored = getTest(db, TestId.parse(payload));
     if (!stored) throw new Error('That test no longer exists.');
 

@@ -104,6 +104,15 @@ export class SyncManager {
     };
   }
 
+  /**
+   * Whether someone is signed in. Signed out, Kotoba is a trial: answers,
+   * new tests and test changes aren't kept.
+   */
+  async signedIn(): Promise<boolean> {
+    if (!this.client) return false;
+    return Boolean((await this.client.auth.getSession()).data.session);
+  }
+
   private requireClient(): SupabaseClient {
     if (!this.client) throw new Error('Add your Supabase project first.');
     return this.client;

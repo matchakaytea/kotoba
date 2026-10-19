@@ -1,5 +1,6 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState } from 'react';
 import type { SyncStatus } from '../shared/api';
+import { useAccount } from './account';
 import { formatTimestamp } from './format';
 import { useI18n } from './i18n/i18n';
 
@@ -13,15 +14,11 @@ function errorText(error: unknown): string {
   );
 }
 
-/** Connects Kotoba to the learner's Supabase project for syncing devices. */
+/** Who is signed in and how syncing is going; signing in has its own page. */
 export function SyncPanel() {
   const { t, locale } = useI18n();
+  const account = useAccount();
   const [status, setStatus] = useState<SyncStatus | null>(null);
-  const [editing, setEditing] = useState(false);
-  const [url, setUrl] = useState('');
-  const [key, setKey] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<Notice>(null);
 
@@ -41,70 +38,14 @@ export function SyncPanel() {
     }
   }
 
-  const saveProject = (event: FormEvent) => {
-    event.preventDefault();
-    return run(async () => {
-      setStatus(await window.kotoba.configureSync({ url, key }));
-      setEditing(false);
-      setKey('');
-    });
-  };
-
-  const signIn = () =>
-    run(async () => {
-      setStatus(await window.kotoba.signIn({ email, password }));
-      setPassword('');
-    });
-
-  const signUp = () =>
-    run(async () => {
-      const result = await window.kotoba.signUp({ email, password });
-      setStatus(result);
-      setPassword('');
-      if (result.confirm) setNotice({ ok: true, text: t('sync.confirmEmail') });
-    });
-
   if (!status) return null;
-  const showProjectForm = editing || !status.url;
 
   return (
     <section className="data-panel">
       <h2>{t('sync.title')}</h2>
       <p className="page-sub">{t('sync.sub')}</p>
 
-      {showProjectForm ? (
-        <form className="form sync-form" onSubmit={saveProject}>
-          <label className="field">
-            <span className="field-label">{t('sync.url')}</span>
-            <input
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://abcdefgh.supabase.co"
-              autoComplete="off"
-            />
-          </label>
-          <label className="field">
-            <span className="field-label">{t('sync.key')}</span>
-            <input
-              value={key}
-              onChange={(e) => setKey(e.target.value)}
-              placeholder="eyJ… / sb_publishable_…"
-              autoComplete="off"
-            />
-            <span className="field-hint">{t('sync.keyHint')}</span>
-          </label>
-          <div className="form-actions">
-            <button type="submit" className="primary" disabled={busy}>
-              {t('sync.saveProject')}
-            </button>
-            {status.url && (
-              <button type="button" onClick={() => setEditing(false)}>
-                {t('library.cancel')}
-              </button>
-            )}
-          </div>
-        </form>
-      ) : status.email ? (
+      {status.email ? (
         <>
           <p>
             {t('sync.signedIn', { email: status.email })}
@@ -132,7 +73,10 @@ export function SyncPanel() {
               className="subtle-neutral"
               disabled={busy}
               onClick={() =>
-                run(async () => setStatus(await window.kotoba.signOut()))
+                run(async () => {
+                  setStatus(await window.kotoba.signOut());
+                  await account.refresh();
+                })
               }
             >
               {t('sync.signOut')}
@@ -140,45 +84,14 @@ export function SyncPanel() {
           </div>
         </>
       ) : (
-        <div className="form sync-form">
-          <p className="cell-muted">
-            {t('sync.project', { url: status.url ?? '' })}
-          </p>
-          <label className="field">
-            <span className="field-label">{t('sync.email')}</span>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="username"
-            />
-          </label>
-          <label className="field">
-            <span className="field-label">{t('sync.password')}</span>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-            />
-            <span className="field-hint">{t('sync.passwordHint')}</span>
-          </label>
+        <>
+          <p>{t('account.signedOut')}</p>
           <div className="form-actions">
-            <button className="primary" disabled={busy} onClick={signIn}>
+            <button className="primary" onClick={account.openSignIn}>
               {t('sync.signIn')}
             </button>
-            <button disabled={busy} onClick={signUp}>
-              {t('sync.signUp')}
-            </button>
-            <button
-              className="subtle-neutral"
-              disabled={busy}
-              onClick={() => setEditing(true)}
-            >
-              {t('sync.changeProject')}
-            </button>
           </div>
-        </div>
+        </>
       )}
 
       {notice && (

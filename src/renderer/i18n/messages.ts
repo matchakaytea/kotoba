@@ -245,6 +245,17 @@ const en = {
   'settings.tab.account': 'Account',
   'settings.tab.data': 'Data',
   'settings.tab.about': 'About',
+  'signin.title': 'Sign in to Kotoba',
+  'signin.sub':
+    'Sign in to keep your progress and sync it between your computer and phone.',
+  'signin.guest': 'Continue without signing in',
+  'signin.guestHint':
+    'Without an account nothing is kept: answers, reviews and new tests are gone when you close Kotoba.',
+  'signin.back': '← Back',
+  'signin.project': 'Supabase project',
+  'guest.banner': "You're not signed in, so answers and progress aren't saved.",
+  'account.signedOut':
+    "You're not signed in. Answers, reviews and new tests aren't saved until you sign in.",
 };
 
 export type MessageKey = keyof typeof en;
@@ -497,6 +508,15 @@ const zhHans: Messages = {
   'settings.tab.account': '账户',
   'settings.tab.data': '数据',
   'settings.tab.about': '关于',
+  'signin.title': '登录 Kotoba',
+  'signin.sub': '登录后会保存你的进度，并在电脑和手机之间同步。',
+  'signin.guest': '不登录，先看看',
+  'signin.guestHint':
+    '不登录就不会保存任何内容：关闭 Kotoba 后，作答记录、复习和新测试都会消失。',
+  'signin.back': '← 返回',
+  'signin.project': 'Supabase 项目',
+  'guest.banner': '你还没有登录，作答和进度不会被保存。',
+  'account.signedOut': '你还没有登录。登录前，作答、复习和新测试都不会被保存。',
 };
 
 const zhHant: Messages = {
@@ -735,6 +755,15 @@ const zhHant: Messages = {
   'settings.tab.account': '帳號',
   'settings.tab.data': '資料',
   'settings.tab.about': '關於',
+  'signin.title': '登入 Kotoba',
+  'signin.sub': '登入後會儲存你的進度，並在電腦和手機之間同步。',
+  'signin.guest': '不登入，先看看',
+  'signin.guestHint':
+    '不登入就不會儲存任何內容：關閉 Kotoba 後，作答紀錄、複習和新測驗都會消失。',
+  'signin.back': '← 返回',
+  'signin.project': 'Supabase 專案',
+  'guest.banner': '你還沒有登入，作答和進度不會被儲存。',
+  'account.signedOut': '你還沒有登入。登入前，作答、複習和新測驗都不會被儲存。',
 };
 
 const ko: Messages = {
@@ -980,6 +1009,17 @@ const ko: Messages = {
   'settings.tab.account': '계정',
   'settings.tab.data': '데이터',
   'settings.tab.about': '정보',
+  'signin.title': 'Kotoba 로그인',
+  'signin.sub':
+    '로그인하면 학습 기록이 저장되고 컴퓨터와 휴대폰 사이에 동기화됩니다.',
+  'signin.guest': '로그인하지 않고 계속',
+  'signin.guestHint':
+    '계정이 없으면 아무것도 저장되지 않습니다. Kotoba를 닫으면 답변, 복습, 새 테스트가 사라집니다.',
+  'signin.back': '← 뒤로',
+  'signin.project': 'Supabase 프로젝트',
+  'guest.banner': '로그인하지 않아 답변과 학습 기록이 저장되지 않습니다.',
+  'account.signedOut':
+    '로그인하지 않았습니다. 로그인하기 전까지 답변, 복습, 새 테스트는 저장되지 않습니다.',
 };
 
 export const MESSAGES: Record<

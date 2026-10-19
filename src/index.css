@@ -331,6 +331,91 @@ input {
   color: var(--muted);
 }
 
+/* Sign-in page */
+.signin {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(1.5rem + env(safe-area-inset-top)) 1rem
+    calc(1.5rem + env(safe-area-inset-bottom));
+}
+
+.signin-card {
+  width: 100%;
+  max-width: 400px;
+  padding: 2rem;
+  border: var(--border-width) solid var(--border);
+  border-radius: calc(var(--radius) * 1.5);
+  background: var(--surface);
+}
+
+.signin-card h1 {
+  margin: 0.75rem 0 0.25rem;
+}
+
+.signin-mark {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  border: var(--border-width) solid var(--border);
+  background: #ffffff;
+  color: #2b2438;
+  font-family: 'Yu Mincho', 'Hiragino Mincho ProN', 'Noto Serif JP', serif;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-top: 0.5rem;
+}
+
+.signin-guest {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: var(--border-width) solid var(--border);
+}
+
+.signin-guest .field-hint {
+  margin: 0.25rem 0 0;
+}
+
+.signin-project {
+  margin: 1rem 0 0;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+}
+
+@media (max-width: 720px) {
+  .signin-card {
+    padding: 1.25rem;
+  }
+}
+
+button.link-button {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Says nothing is being kept while signed out */
+.guest-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+  padding-right: 1rem;
+  border-color: var(--warning);
+  background: var(--warning-soft);
+}
+
 /* Settings tabs */
 .settings-tabs {
   display: flex;

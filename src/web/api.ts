@@ -59,8 +59,11 @@ export function webApi(
   const changed = () => sync.schedule();
   return {
     platform: 'web',
+    // Signed out, nothing the learner does is kept (see SyncManager.signedIn).
     saveAttempt: async (input) => {
-      recordAttempt(db, AttemptInput.parse(input));
+      const attempt = AttemptInput.parse(input);
+      if (!(await sync.signedIn())) return;
+      recordAttempt(db, attempt);
       changed();
     },
     getSummary: async () => getSummary(db),
@@ -80,14 +83,18 @@ export function webApi(
     },
     getMistakes: async () => withReadings(getMistakes(db)),
     dismissMistake: async (id) => {
-      dismissMistake(db, id);
-      changed();
+      if (await sync.signedIn()) {
+        dismissMistake(db, id);
+        changed();
+      }
       return withReadings(getMistakes(db));
     },
     getLibrary: async () => getLibrary(db),
     deleteTest: async (testId) => {
-      deleteTest(db, testId);
-      changed();
+      if (await sync.signedIn()) {
+        deleteTest(db, testId);
+        changed();
+      }
       return getLibrary(db);
     },
     translateTest: async () => {
