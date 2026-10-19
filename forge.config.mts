@@ -1,19 +1,60 @@
-import type { ForgeConfig } from '@electron-forge/shared-types';
-import { MakerSquirrel } from '@electron-forge/maker-squirrel';
+import path from 'node:path';
+import { MakerBase, type MakerOptions } from '@electron-forge/maker-base';
+import type { ForgeConfig, ForgePlatform } from '@electron-forge/shared-types';
 import { MakerZIP } from '@electron-forge/maker-zip';
 import { MakerDeb } from '@electron-forge/maker-deb';
 import { MakerRpm } from '@electron-forge/maker-rpm';
 import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
+import { Arch, build, Platform } from 'electron-builder';
+
+/**
+ * Builds a Windows installer with electron-builder's NSIS target from the app
+ * Forge has already packaged. Unlike Squirrel, it lets you pick the folder.
+ */
+class MakerNsis extends MakerBase<Record<string, never>> {
+  name = 'nsis';
+  defaultPlatforms: ForgePlatform[] = ['win32'];
+
+  isSupportedOnCurrentPlatform(): boolean {
+    return process.platform === 'win32';
+  }
+
+  async make({ dir, makeDir, targetArch }: MakerOptions): Promise<string[]> {
+    const files = await build({
+      prepackaged: dir,
+      targets: Platform.WINDOWS.createTarget(
+        'nsis',
+        Arch[targetArch as keyof typeof Arch],
+      ),
+      config: {
+        appId: 'com.matchakaytea.kotoba',
+        directories: { output: path.join(makeDir, 'nsis', targetArch) },
+        win: { icon: 'assets/icon.ico' },
+        nsis: {
+          oneClick: false,
+          allowToChangeInstallationDirectory: true,
+          installerIcon: 'assets/icon.ico',
+          uninstallerIcon: 'assets/icon.ico',
+          shortcutName: 'kotoba',
+          artifactName: 'kotoba-${version} Setup.${ext}',
+        },
+      },
+    });
+    return files.filter((file) => file.endsWith('.exe'));
+  }
+}
 
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
+    // Each platform adds its own extension: assets/icon.ico on Windows.
+    icon: 'assets/icon',
   },
   rebuildConfig: {},
   makers: [
-    new MakerSquirrel({}),
+    new MakerNsis(),
     new MakerZIP({}, ['darwin']),
     new MakerRpm({}),
     new MakerDeb({}),
