@@ -674,7 +674,8 @@ input {
 .signin .si-submit {
   flex: 1 1 0;
   min-width: 0;
-  height: 51px;
+  min-height: 51px;
+  padding: 6px 12px;
   border: 0;
   border-radius: 12px;
   background: var(--si-button);
@@ -735,8 +736,8 @@ input {
 .signin .si-guest {
   flex: 1 1 0;
   min-width: 0;
-  height: 51px;
-  padding: 0 14px;
+  min-height: 51px;
+  padding: 6px 12px;
   border: 1px solid var(--border-strong);
   border-radius: 12px;
   background: var(--si-page);
@@ -744,6 +745,14 @@ input {
   font-size: 14px;
   font-weight: 600;
   line-height: 1.2;
+}
+
+.signin .si-submit,
+.signin .si-guest {
+  /* Long labels (“Continue without signing in”) wrap inside the button. */
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
 }
 
 .signin .si-guest:hover {
@@ -871,10 +880,13 @@ input {
   }
 
   .signin .si-input,
-  .signin .si-submit,
-  .signin .si-guest,
   .signin .si-eye {
     height: 46px;
+  }
+
+  .signin .si-submit,
+  .signin .si-guest {
+    min-height: 46px;
   }
 
   .si-signup {
@@ -882,7 +894,7 @@ input {
   }
 
   .signin .si-guest {
-    padding: 0 10px;
+    padding: 6px 10px;
     font-size: 13px;
   }
 
