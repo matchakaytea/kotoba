@@ -13,6 +13,8 @@ export default defineConfig({
       ),
     },
   },
+  // Icons, the app manifest and the redirect that serves the app at "/".
+  publicDir: 'web-public',
   build: {
     outDir: 'dist-web',
     rollupOptions: { input: 'web.html' },
