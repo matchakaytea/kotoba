@@ -13,7 +13,7 @@ export default defineConfig({
       ),
     },
   },
-  // Icons, the app manifest and the redirect that serves the app at "/".
+  // Icons and the app manifest for the Home Screen.
   publicDir: 'web-public',
   build: {
     outDir: 'dist-web',

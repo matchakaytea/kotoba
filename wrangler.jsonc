@@ -1,0 +1,10 @@
+// Hosts the web version on Cloudflare: the build writes dist-web/ and
+// `npx wrangler deploy` uploads it as static files.
+{
+  "name": "kotoba",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist-web",
+    "not_found_handling": "single-page-application",
+  },
+}

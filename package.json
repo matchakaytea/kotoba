@@ -22,7 +22,7 @@
     "test": "vitest",
     "build:vocab": "node scripts/build-vocab.mts",
     "web": "vite --config vite.web.config.mts",
-    "web:build": "vite build --config vite.web.config.mts"
+    "web:build": "vite build --config vite.web.config.mts && node -e \"require('fs').copyFileSync('dist-web/web.html','dist-web/index.html')\""
   },
   "devDependencies": {
     "@electron-forge/cli": "^8.0.1",
