@@ -10,6 +10,8 @@
   --hover: rgba(0, 0, 0, 0.04);
   --accent: #2563eb;
   --accent-hover: #1d4ed8;
+  /* The accent as text colour; a skin with a pale accent sets a deeper one. */
+  --accent-text: var(--accent);
   --accent-soft: #e0e9fd;
   --on-accent: #ffffff;
   --correct: #15803d;
@@ -341,8 +343,8 @@ input {
   --si-muted: var(--muted);
   --si-faint: var(--faint);
   --si-line: var(--border);
-  --si-accent: var(--accent);
-  --si-highlight: var(--accent);
+  --si-accent: var(--accent-text);
+  --si-highlight: var(--accent-text);
   --si-button: var(--accent);
   --si-on-button: var(--on-accent);
   --si-button-hover: var(--accent-hover);
@@ -364,16 +366,13 @@ input {
   font-family: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
-:root:not([data-theme]) .signin {
-  --si-accent: #5067a5;
-  --si-highlight: #6674a4;
-  --si-button: #252b38;
-  --si-on-button: #ffffff;
-  --si-button-hover: #414c61;
-}
-
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) .signin {
+    --si-accent: #5067a5;
+    --si-highlight: #6674a4;
+    --si-button: #252b38;
+    --si-on-button: #ffffff;
+    --si-button-hover: #414c61;
     --si-page: #ffffff;
     --si-art: #f8f9fb;
     --si-text: #202327;
@@ -388,18 +387,6 @@ input {
     --si-tile-text: #566173;
     --si-logo: #22272d;
     --si-on-logo: #ffffff;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) .signin {
-    --si-accent: #8ea2dc;
-    --si-highlight: #8ea2dc;
-    --si-button: #e4e4e7;
-    --si-on-button: #18181b;
-    --si-button-hover: #ffffff;
-    --si-glow-1: #1e2236;
-    --si-glow-2: #241c2e;
   }
 }
 
@@ -685,9 +672,9 @@ input {
 }
 
 .signin .si-submit {
-  width: 100%;
+  flex: 1 1 0;
+  min-width: 0;
   height: 51px;
-  margin-top: 5px;
   border: 0;
   border-radius: 12px;
   background: var(--si-button);
@@ -737,33 +724,37 @@ input {
   text-decoration: underline;
 }
 
-.si-guest {
-  margin-top: 32px;
-  padding-top: 22px;
-  border-top: 1px solid var(--si-line);
-  text-align: center;
+/* Sign in and "continue without signing in" side by side; stacked on
+   narrow phones. */
+.si-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 5px;
 }
 
-.signin .si-guest button {
-  height: 44px;
-  padding: 0 18px;
-  border: 1px solid var(--si-line);
+.signin .si-guest {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 51px;
+  padding: 0 14px;
+  border: 1px solid var(--border-strong);
   border-radius: 12px;
   background: var(--si-page);
   color: var(--si-text);
   font-size: 14px;
   font-weight: 600;
+  line-height: 1.2;
 }
 
-.signin .si-guest button:hover {
+.signin .si-guest:hover {
   background: var(--hover);
 }
 
-.si-guest p {
+.si-guest-hint {
   margin: 10px 0 0;
   color: var(--si-muted);
   font-size: 12px;
-  line-height: 1.6;
+  line-height: 1.55;
 }
 
 .si-project {
@@ -781,9 +772,9 @@ input {
   }
 
   .si-art {
-    height: 37vh;
-    min-height: 300px;
-    max-height: 380px;
+    height: 50vh;
+    height: 50svh;
+    min-height: 280px;
   }
 
   .si-brand {
@@ -840,11 +831,6 @@ input {
 }
 
 @media (max-width: 450px) {
-  .si-art {
-    height: 265px;
-    min-height: 265px;
-  }
-
   .si-copy h2 {
     font-size: 30px;
   }
@@ -862,11 +848,42 @@ input {
   }
 
   .si-pane {
-    padding: 36px 24px calc(26px + env(safe-area-inset-bottom));
+    padding: 22px 20px calc(20px + env(safe-area-inset-bottom));
+  }
+
+  .si-welcome {
+    margin-bottom: 6px;
+    font-size: 12px;
   }
 
   .si-content h1 {
-    font-size: 32px;
+    margin-bottom: 6px;
+    font-size: 26px;
+  }
+
+  .si-sub {
+    margin-bottom: 16px;
+    font-size: 13px;
+  }
+
+  .si-field {
+    margin-bottom: 12px;
+  }
+
+  .signin .si-input,
+  .signin .si-submit,
+  .signin .si-guest,
+  .signin .si-eye {
+    height: 46px;
+  }
+
+  .si-signup {
+    margin-top: 12px;
+  }
+
+  .signin .si-guest {
+    padding: 0 10px;
+    font-size: 13px;
   }
 
   .si-tile {
@@ -881,6 +898,18 @@ input {
 
   .si-track {
     gap: 10px;
+  }
+}
+
+@media (max-width: 380px) {
+  .si-actions {
+    flex-direction: column;
+  }
+
+  .signin .si-submit,
+  .signin .si-guest {
+    flex: none;
+    width: 100%;
   }
 }
 
@@ -1111,7 +1140,7 @@ input {
   flex-shrink: 0;
   border-radius: 50%;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 600;
 }
 
@@ -1562,6 +1591,8 @@ html:lang(ko) body {
   --accent-hover: #84c3ee;
   --accent-soft: #ffe08a;
   --on-accent: #1e4a6b;
+  /* The sky blue is too pale for text on cream and white. */
+  --accent-text: #2c6a99;
   --nav-active-text: #6b4e00;
   --correct: #5f9e5a;
   --correct-soft: #e5f4dc;
@@ -1586,7 +1617,7 @@ button.subtle-neutral {
 }
 
 button.subtle-neutral:hover:not(:disabled) {
-  color: var(--accent);
+  color: var(--accent-text);
   background: var(--accent-soft);
 }
 
@@ -1769,7 +1800,7 @@ select:disabled {
 .pitch {
   margin-left: 0.4rem;
   font-size: 0.8rem;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .vocab-detail td {
@@ -1804,7 +1835,7 @@ select:disabled {
 }
 
 .vocab-sentence .target {
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 600;
 }
 

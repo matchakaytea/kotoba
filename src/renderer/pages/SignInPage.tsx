@@ -183,9 +183,14 @@ export function SignInPage({ onSignedIn, onGuest, onBack }: Props) {
                 />
                 <p className="si-hint">{t('sync.keyHint')}</p>
               </div>
-              <button type="submit" className="si-submit" disabled={busy}>
-                {t('sync.saveProject')}
-              </button>
+              <div className="si-actions">
+                <button type="submit" className="si-submit" disabled={busy}>
+                  {t('sync.saveProject')}
+                </button>
+                <button type="button" className="si-guest" onClick={onGuest}>
+                  {t('signin.guest')}
+                </button>
+              </div>
               {status.url && (
                 <p className="si-signup">
                   <button
@@ -249,9 +254,15 @@ export function SignInPage({ onSignedIn, onGuest, onBack }: Props) {
                   </button>
                 </div>
               </div>
-              <button type="submit" className="si-submit" disabled={busy}>
-                {t('sync.signIn')} <span aria-hidden="true">↗</span>
-              </button>
+              <div className="si-actions">
+                <button type="submit" className="si-submit" disabled={busy}>
+                  {t('sync.signIn')} <span aria-hidden="true">↗</span>
+                </button>
+                <button type="button" className="si-guest" onClick={onGuest}>
+                  {t('signin.guest')}
+                </button>
+              </div>
+              <p className="si-guest-hint">{t('signin.guestHint')}</p>
             </form>
           )}
 
@@ -275,13 +286,6 @@ export function SignInPage({ onSignedIn, onGuest, onBack }: Props) {
               </button>
             </p>
           )}
-
-          <div className="si-guest">
-            <button type="button" onClick={onGuest}>
-              {t('signin.guest')}
-            </button>
-            <p>{t('signin.guestHint')}</p>
-          </div>
 
           {!showProject && (
             <p className="si-project">
