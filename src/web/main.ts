@@ -53,6 +53,10 @@ async function start() {
 
   await import('../renderer/index');
   void sync.syncNow();
+  sync.startBackgroundSync();
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') void sync.syncNow();
+  });
 }
 
 void start();

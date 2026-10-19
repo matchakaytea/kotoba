@@ -6,6 +6,9 @@ import { runSync } from './sync';
 import { supabaseStore } from './supabase';
 
 const AUTO_SYNC_DELAY_MS = 5_000;
+// While Kotoba is open it also checks for the other device's changes this
+// often, so answers given on the phone show up without restarting.
+const BACKGROUND_SYNC_MS = 2 * 60_000;
 
 export const SyncConfig = z.strictObject({
   url: z
@@ -155,6 +158,11 @@ export class SyncManager {
     await this.running;
     if (throwOnError && this.lastError) throw new Error(this.lastError);
     return this.status();
+  }
+
+  /** Keeps syncing in the background while the app is open. */
+  startBackgroundSync(): void {
+    setInterval(() => void this.syncNow(), BACKGROUND_SYNC_MS);
   }
 
   /** Syncs a few seconds after a change, so a burst of answers goes up once. */

@@ -102,6 +102,8 @@ app.whenReady().then(() => {
   const background = () => windowBackground(getSettings(db));
   createWindow(background());
   void sync.syncNow();
+  sync.startBackgroundSync();
+  app.on('browser-window-focus', () => void sync.syncNow());
 
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
