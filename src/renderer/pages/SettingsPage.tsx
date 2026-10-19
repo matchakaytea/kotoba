@@ -16,6 +16,7 @@ import { cleanError } from '../format';
 import { useI18n } from '../i18n/i18n';
 import { DataPanel } from '../DataPanel';
 import { SyncPanel } from '../SyncPanel';
+import { UpdatePanel } from '../updates';
 
 type Status = { ok: true } | { ok: false; error: string | null };
 
@@ -398,6 +399,7 @@ export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
 
       <SyncPanel />
       {window.kotoba.platform === 'desktop' && <DataPanel />}
+      {window.kotoba.platform === 'desktop' && <UpdatePanel />}
     </div>
   );
 }

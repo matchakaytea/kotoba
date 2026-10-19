@@ -200,7 +200,32 @@ export interface KotobaApi {
   syncNow(): Promise<SyncStatus>;
   /** Called after a sync brought in changes; returns a function to stop. */
   onSynced(listener: () => void): () => void;
+  getUpdateState(): Promise<UpdateState>;
+  checkForUpdates(): Promise<UpdateState>;
+  /** Downloads the newer version, installs it and restarts Kotoba. */
+  installUpdate(): Promise<void>;
+  /** Called when the update state changes; returns a function to stop. */
+  onUpdateState(listener: (state: UpdateState) => void): () => void;
 }
+
+/** Where the desktop app is with updates from GitHub Releases. */
+export type UpdateState = {
+  status:
+    | 'idle'
+    | 'checking'
+    | 'none'
+    | 'available'
+    | 'downloading'
+    | 'ready'
+    | 'error'
+    | 'unsupported';
+  /** The version you have now. */
+  current?: string;
+  /** The newer version, once one is found. */
+  version?: string;
+  percent?: number;
+  error?: string;
+};
 
 export type VocabTier = 'high' | 'mid' | 'low';
 

@@ -18,6 +18,7 @@ import { TodayPage } from './pages/TodayPage';
 import { Sidebar, type Page } from './Sidebar';
 import { TestRunner } from './TestRunner';
 import { SkinBackdrop } from './SkinBackdrop';
+import { UpdateBanner } from './updates';
 import { applyTheme } from './theme';
 
 type Skin = {
@@ -109,6 +110,7 @@ export function App() {
         <div className="shell">
           <Sidebar current={page} onSelect={setPage} />
           <main className="content" key={synced}>
+            <UpdateBanner />
             {page === 'today' && (
               <TodayPage
                 onStart={start}

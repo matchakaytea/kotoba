@@ -331,6 +331,20 @@ input {
   color: var(--muted);
 }
 
+/* Offers a newer version of the desktop app */
+.update-banner {
+  margin-bottom: 1.25rem;
+  padding-right: 1rem;
+}
+
+.update-banner p {
+  margin: 0;
+}
+
+.update-banner .form-actions {
+  margin-top: 0.6rem;
+}
+
 /* Lists and tables */
 
 .row-list {

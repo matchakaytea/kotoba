@@ -134,5 +134,10 @@ export function webApi(
       onSynced.add(listener);
       return () => onSynced.delete(listener);
     },
+    // The web version is always the latest one Cloudflare serves.
+    getUpdateState: async () => ({ status: 'unsupported' }),
+    checkForUpdates: async () => ({ status: 'unsupported' }),
+    installUpdate: async () => {},
+    onUpdateState: () => () => {},
   };
 }

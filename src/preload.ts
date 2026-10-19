@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { KotobaApi } from './shared/api';
+import type { KotobaApi, UpdateState } from './shared/api';
 
 const api: KotobaApi = {
   platform: 'desktop',
@@ -40,6 +40,14 @@ const api: KotobaApi = {
     const handler = () => listener();
     ipcRenderer.on('sync:changed', handler);
     return () => ipcRenderer.removeListener('sync:changed', handler);
+  },
+  getUpdateState: () => ipcRenderer.invoke('update:state'),
+  checkForUpdates: () => ipcRenderer.invoke('update:check'),
+  installUpdate: () => ipcRenderer.invoke('update:install'),
+  onUpdateState: (listener) => {
+    const handler = (_event: unknown, state: UpdateState) => listener(state);
+    ipcRenderer.on('update:changed', handler);
+    return () => ipcRenderer.removeListener('update:changed', handler);
   },
 };
 

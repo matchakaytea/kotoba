@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import { MakerBase, type MakerOptions } from '@electron-forge/maker-base';
 import type { ForgeConfig, ForgePlatform } from '@electron-forge/shared-types';
@@ -8,6 +9,9 @@ import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
 import { Arch, build, Platform } from 'electron-builder';
+
+// Releases of the desktop app are published here.
+const GITHUB = { owner: 'matchakaytea', repo: 'kotoba' };
 
 /**
  * Builds a Windows installer with electron-builder's NSIS target from the app
@@ -22,8 +26,22 @@ class MakerNsis extends MakerBase<Record<string, never>> {
   }
 
   async make({ dir, makeDir, targetArch }: MakerOptions): Promise<string[]> {
+    // electron-builder skips this file for an app it didn't package itself;
+    // the installed app reads it to find newer versions.
+    fs.writeFileSync(
+      path.join(dir, 'resources', 'app-update.yml'),
+      [
+        'provider: github',
+        `owner: ${GITHUB.owner}`,
+        `repo: ${GITHUB.repo}`,
+        'updaterCacheDirName: kotoba-updater',
+        '',
+      ].join('\n'),
+    );
     const files = await build({
       prepackaged: dir,
+      // Uploading is done by hand; this only builds the files.
+      publish: 'never',
       targets: Platform.WINDOWS.createTarget(
         'nsis',
         Arch[targetArch as keyof typeof Arch],
@@ -32,13 +50,16 @@ class MakerNsis extends MakerBase<Record<string, never>> {
         appId: 'com.matchakaytea.kotoba',
         directories: { output: path.join(makeDir, 'nsis', targetArch) },
         win: { icon: 'assets/icon.ico' },
+        // Where the installed app looks for newer versions.
+        publish: { provider: 'github', ...GITHUB },
         nsis: {
           oneClick: false,
           allowToChangeInstallationDirectory: true,
           installerIcon: 'assets/icon.ico',
           uninstallerIcon: 'assets/icon.ico',
           shortcutName: 'kotoba',
-          artifactName: 'kotoba-${version} Setup.${ext}',
+          // No spaces: GitHub renames them in uploads, which breaks updates.
+          artifactName: 'kotoba-${version}-Setup.${ext}',
         },
       },
     });

@@ -55,6 +55,7 @@ import { localDay } from './scheduler';
 import { backupDatabase, readBackup, restoreDatabase } from './backup';
 import { readSkinPicture, saveSkinPicture } from './skin-picture';
 import type { SyncManager } from './sync/manager';
+import type { Updater } from './updater';
 
 type Context = {
   db: DatabaseSync;
@@ -62,6 +63,7 @@ type Context = {
   workDir: string;
   dataDir: string;
   sync: SyncManager;
+  updater: Updater;
   isTrustedSender: (event: IpcMainInvokeEvent) => boolean;
 };
 
@@ -74,6 +76,7 @@ export function registerIpcHandlers({
   workDir,
   dataDir,
   sync,
+  updater,
   isTrustedSender,
 }: Context): void {
   function handle(
@@ -147,6 +150,9 @@ export function registerIpcHandlers({
   handle('sync:signUp', (_event, payload) => sync.signUp(payload));
   handle('sync:signOut', () => sync.signOut());
   handle('sync:now', () => sync.syncNow(true));
+  handle('update:state', () => updater.current());
+  handle('update:check', () => updater.check());
+  handle('update:install', () => updater.install());
   handle('inbox:import', () => importAndRemember());
 
   handle('inbox:dismiss', () => {

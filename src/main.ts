@@ -7,6 +7,7 @@ import { getSettings, openDatabase } from './main/database';
 import { inboxDirs } from './main/inbox';
 import { registerIpcHandlers } from './main/ipc';
 import { SyncManager } from './main/sync/manager';
+import { Updater } from './main/updater';
 import {
   loadWindowState,
   MIN_SIZE,
@@ -86,6 +87,10 @@ app.whenReady().then(() => {
   const sync = new SyncManager(db, () =>
     mainWindow?.webContents.send('sync:changed'),
   );
+  // Offers newer versions from GitHub Releases and installs them on request.
+  const updater = new Updater((state) =>
+    mainWindow?.webContents.send('update:changed', state),
+  );
 
   registerIpcHandlers({
     db,
@@ -93,6 +98,7 @@ app.whenReady().then(() => {
     workDir: path.join(userData, 'claude-work'),
     dataDir: userData,
     sync,
+    updater,
     isTrustedSender: (event) =>
       mainWindow !== null &&
       event.sender === mainWindow.webContents &&
@@ -103,6 +109,7 @@ app.whenReady().then(() => {
   createWindow(background());
   void sync.syncNow();
   sync.startBackgroundSync();
+  updater.start();
   app.on('browser-window-focus', () => void sync.syncNow());
 
   // On OS X it's common to re-create a window in the app when the
