@@ -341,10 +341,8 @@ input {
   --si-muted: var(--muted);
   --si-faint: var(--faint);
   --si-line: var(--border);
-  /* Accent used as text: blended toward the text colour so pale accents
-     (Mochi's sky blue) stay readable on the page. */
-  --si-accent: color-mix(in srgb, var(--accent) 70%, var(--text));
-  --si-highlight: var(--si-accent);
+  --si-accent: var(--accent);
+  --si-highlight: var(--accent);
   --si-button: var(--accent);
   --si-on-button: var(--on-accent);
   --si-button-hover: var(--accent-hover);
@@ -372,12 +370,6 @@ input {
   --si-button: #252b38;
   --si-on-button: #ffffff;
   --si-button-hover: #414c61;
-}
-
-/* Mochi's sky-blue accent is too pale for text on white; its deeper blue is
-   used for links and headings instead. */
-:root[data-theme='mochi'] .signin {
-  --si-accent: #2c6a99;
 }
 
 @media (prefers-color-scheme: light) {
