@@ -38,6 +38,13 @@ async function start() {
   const sync = new SyncManager(db, () => {
     for (const listener of listeners) listener();
   });
+  // The web build can come with the Supabase project already set (the URL
+  // and publishable key are safe to ship), so devices only need to sign in.
+  const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  const key = import.meta.env.VITE_SUPABASE_KEY as string | undefined;
+  if (url && key && !(await sync.status()).url) {
+    await sync.configure({ url, key });
+  }
   window.kotoba = webApi(db, sync, listeners);
   // Lets the dev server's console load sample data; not in the built site.
   if (import.meta.env.DEV) {
