@@ -331,24 +331,84 @@ input {
   color: var(--muted);
 }
 
-/* Sign-in page: white, with Japanese, Korean and Chinese words drifting
-   past the brand on the left. Its colours stay the same whatever the skin. */
+/* Sign-in page: the layout from KT's design, with words drifting past the
+   brand on the left. Its colours come from the skin in use on this device;
+   the default skin keeps the white and muted-indigo look it was drawn in. */
 .signin {
-  --si-text: #202327;
-  --si-muted: #7d8793;
-  --si-line: #dfe4ea;
-  --si-accent: #5067a5;
-  --si-button: #252b38;
-  --si-button-hover: #414c61;
+  --si-page: var(--surface);
+  --si-art: var(--bg);
+  --si-text: var(--text);
+  --si-muted: var(--muted);
+  --si-faint: var(--faint);
+  --si-line: var(--border);
+  /* Accent used as text: blended toward the text colour so pale accents
+     (Mochi's sky blue) stay readable on the page. */
+  --si-accent: color-mix(in srgb, var(--accent) 70%, var(--text));
+  --si-highlight: var(--si-accent);
+  --si-button: var(--accent);
+  --si-on-button: var(--on-accent);
+  --si-button-hover: var(--accent-hover);
+  --si-glow-1: color-mix(in srgb, var(--accent) 10%, var(--bg));
+  --si-glow-2: var(--accent-soft);
+  --si-tile: color-mix(in srgb, var(--surface) 78%, transparent);
+  --si-tile-alt: color-mix(in srgb, var(--accent-soft) 55%, var(--surface));
+  --si-tile-line: var(--border);
+  --si-tile-text: var(--muted);
+  --si-logo: var(--text);
+  --si-on-logo: var(--surface);
   position: relative;
   z-index: 1;
   min-height: 100vh;
   display: grid;
   grid-template-columns: minmax(0, 1.09fr) minmax(430px, 0.91fr);
-  background: #ffffff;
+  background: var(--si-page);
   color: var(--si-text);
-  color-scheme: light;
   font-family: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+:root:not([data-theme]) .signin {
+  --si-accent: #5067a5;
+  --si-highlight: #6674a4;
+  --si-button: #252b38;
+  --si-on-button: #ffffff;
+  --si-button-hover: #414c61;
+}
+
+/* Mochi's sky-blue accent is too pale for text on white; its deeper blue is
+   used for links and headings instead. */
+:root[data-theme='mochi'] .signin {
+  --si-accent: #2c6a99;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .signin {
+    --si-page: #ffffff;
+    --si-art: #f8f9fb;
+    --si-text: #202327;
+    --si-muted: #7d8793;
+    --si-faint: #a2aab4;
+    --si-line: #dfe4ea;
+    --si-glow-1: #e8eef7;
+    --si-glow-2: #f3eafa;
+    --si-tile: rgba(255, 255, 255, 0.78);
+    --si-tile-alt: rgba(242, 245, 251, 0.95);
+    --si-tile-line: #e4e8ef;
+    --si-tile-text: #566173;
+    --si-logo: #22272d;
+    --si-on-logo: #ffffff;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .signin {
+    --si-accent: #8ea2dc;
+    --si-highlight: #8ea2dc;
+    --si-button: #e4e4e7;
+    --si-on-button: #18181b;
+    --si-button-hover: #ffffff;
+    --si-glow-1: #1e2236;
+    --si-glow-2: #241c2e;
+  }
 }
 
 .si-art {
@@ -356,8 +416,8 @@ input {
   overflow: hidden;
   isolation: isolate;
   min-height: 100vh;
-  background: #f8f9fb;
-  color: #22272d;
+  background: var(--si-art);
+  color: var(--si-text);
 }
 
 .si-art::after {
@@ -368,9 +428,9 @@ input {
   pointer-events: none;
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.24) 0%,
-    rgba(255, 255, 255, 0.1) 40%,
-    rgba(255, 255, 255, 0.94) 100%
+    color-mix(in srgb, var(--si-art) 24%, transparent) 0%,
+    color-mix(in srgb, var(--si-art) 10%, transparent) 40%,
+    color-mix(in srgb, var(--si-art) 94%, transparent) 100%
   );
 }
 
@@ -378,8 +438,8 @@ input {
   position: absolute;
   inset: -15%;
   background:
-    radial-gradient(circle at 58% 35%, #e8eef7 0%, transparent 52%),
-    radial-gradient(circle at 6% 95%, #f3eafa 0%, transparent 58%);
+    radial-gradient(circle at 58% 35%, var(--si-glow-1) 0%, transparent 52%),
+    radial-gradient(circle at 6% 95%, var(--si-glow-2) 0%, transparent 58%);
 }
 
 .si-pattern {
@@ -420,11 +480,11 @@ input {
   min-width: 170px;
   height: 104px;
   padding: 0 25px;
-  border: 1px solid #e4e8ef;
+  border: 1px solid var(--si-tile-line);
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.78);
+  background: var(--si-tile);
   box-shadow: 0 8px 28px rgba(61, 75, 100, 0.045);
-  color: #566173;
+  color: var(--si-tile-text);
   font-family: var(--font-ja);
   font-size: 29px;
   font-weight: 700;
@@ -432,11 +492,11 @@ input {
 }
 
 .si-tile:nth-child(4n + 1) {
-  background: rgba(242, 245, 251, 0.95);
+  background: var(--si-tile-alt);
 }
 
 .si-tile:nth-child(5n + 2) {
-  color: #6674a4;
+  color: var(--si-highlight);
 }
 
 .si-tile:nth-child(6n + 3) {
@@ -471,8 +531,8 @@ input {
   width: 36px;
   height: 36px;
   border-radius: 11px;
-  background: #22272d;
-  color: #ffffff;
+  background: var(--si-logo);
+  color: var(--si-on-logo);
   font-family: 'Yu Mincho', 'Hiragino Mincho ProN', 'Noto Serif JP', serif;
   font-size: 21px;
   font-weight: 700;
@@ -488,7 +548,7 @@ input {
 }
 
 .si-eyebrow {
-  color: #6674a4;
+  color: var(--si-highlight);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.2em;
@@ -497,6 +557,7 @@ input {
 
 .si-copy h2 {
   margin: 17px 0;
+  font-family: var(--font-heading);
   font-size: clamp(37px, 3.9vw, 64px);
   font-weight: 600;
   line-height: 1.1;
@@ -506,7 +567,7 @@ input {
 .si-copy p {
   max-width: 355px;
   margin: 0;
-  color: #67717e;
+  color: var(--si-muted);
   font-size: 15px;
   line-height: 1.75;
 }
@@ -517,7 +578,7 @@ input {
   align-items: center;
   justify-content: center;
   padding: 60px 56px;
-  background: #ffffff;
+  background: var(--si-page);
 }
 
 .si-content {
@@ -536,7 +597,7 @@ input {
 
 .si-welcome {
   margin-bottom: 13px;
-  color: #6674a4;
+  color: var(--si-highlight);
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -546,6 +607,7 @@ input {
 .si-content h1 {
   margin: 0 0 12px;
   color: var(--si-text);
+  font-family: var(--font-heading);
   font-size: clamp(34px, 3vw, 44px);
   font-weight: 700;
   line-height: 1.15;
@@ -582,7 +644,7 @@ input {
   padding: 0 15px;
   border: 1px solid var(--si-line);
   border-radius: 12px;
-  background: #ffffff;
+  background: var(--si-page);
   color: var(--si-text);
   font-size: 14px;
   outline: 0;
@@ -597,11 +659,11 @@ input {
 
 .signin .si-input:focus {
   border-color: var(--si-accent);
-  box-shadow: 0 0 0 3px rgba(80, 103, 165, 0.14);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--si-accent) 16%, transparent);
 }
 
 .signin .si-input::placeholder {
-  color: #a7b1bb;
+  color: var(--si-faint);
 }
 
 .signin .si-eye {
@@ -615,7 +677,7 @@ input {
   padding: 0;
   border: 0;
   background: transparent;
-  color: #82909a;
+  color: var(--si-muted);
 }
 
 .si-eye svg {
@@ -638,7 +700,7 @@ input {
   border-radius: 12px;
   background: var(--si-button);
   box-shadow: 0 7px 15px rgba(30, 37, 54, 0.12);
-  color: #ffffff;
+  color: var(--si-on-button);
   font-size: 14px;
   font-weight: 700;
   transition:
@@ -660,7 +722,7 @@ input {
 }
 
 .si-status.error {
-  color: #b42318;
+  color: var(--wrong);
 }
 
 .si-signup {
@@ -686,7 +748,7 @@ input {
 .si-guest {
   margin-top: 32px;
   padding-top: 22px;
-  border-top: 1px solid #e4e8ee;
+  border-top: 1px solid var(--si-line);
   text-align: center;
 }
 
@@ -695,14 +757,14 @@ input {
   padding: 0 18px;
   border: 1px solid var(--si-line);
   border-radius: 12px;
-  background: #ffffff;
+  background: var(--si-page);
   color: var(--si-text);
   font-size: 14px;
   font-weight: 600;
 }
 
 .signin .si-guest button:hover {
-  background: #f8f9fc;
+  background: var(--hover);
 }
 
 .si-guest p {
@@ -714,7 +776,7 @@ input {
 
 .si-project {
   margin: 28px 0 0;
-  color: #a2aab4;
+  color: var(--si-faint);
   font-size: 11px;
   line-height: 1.6;
   text-align: center;
