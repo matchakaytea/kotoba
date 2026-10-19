@@ -123,7 +123,7 @@ const en = {
 
   'settings.title': 'Settings',
   'settings.sub':
-    'Your language, and what Claude should aim for when it writes your tests.',
+    'Your learning goals, how Kotoba looks, your account and your data.',
   'settings.language': 'App language',
   'settings.theme': 'Skin',
   'settings.themeDefault': 'Default (follows Windows)',
@@ -144,7 +144,6 @@ const en = {
   'custom.needPicture': 'Choose a picture first, or pick another skin.',
   'custom.error': "Couldn't find any colours in that picture.",
   'settings.themeHint': 'Colours and fonts. The layout stays the same.',
-  'settings.themeUnsaved': 'Previewing. Save settings to keep this skin.',
   'settings.targetLanguage': 'Learning',
   'settings.targetHint': 'Only Japanese for now. More languages are coming.',
   'target.ja': 'Japanese',
@@ -154,8 +153,6 @@ const en = {
   'target.comingSoon': '(coming soon)',
   'settings.languageHint':
     'Used for the app and for the questions in newly generated tests.',
-  'settings.languageUnsaved':
-    'Previewing. Save settings to keep this language.',
   'settings.level': 'Level',
   'settings.levelHint':
     'Claude writes new words and questions at about this level.',
@@ -210,7 +207,7 @@ const en = {
     'Account created. Open the confirmation email from Supabase, then come back and sign in.',
   'data.title': 'Your data',
   'data.sub':
-    'Your progress is stored only on this computer. Back it up to keep it safe or to move it to another PC.',
+    "Your progress is saved on this computer and, while you're signed in, synced to your other devices. A backup is an extra copy you can keep safe or move to another PC.",
   'data.backup': 'Back up…',
   'data.restoreFrom': 'Restore from a backup…',
   'data.openFolder': 'Open data folder',
@@ -218,8 +215,7 @@ const en = {
   'data.confirm':
     'Replace your data with {name}? It has {tests} tests, {answers} answers and {words} words. Your current data is saved in the data folder first.',
   'data.restore': 'Restore',
-  'settings.save': 'Save settings',
-  'settings.saved': 'Saved. The next test will use these.',
+  'settings.saved': 'Saved.',
   'settings.invalid':
     'Add a level and at least one topic. Questions per test can be 5 to 40.',
 
@@ -243,6 +239,12 @@ const en = {
   'hint.small-ya': 'Check small ゃ / ゅ / ょ.',
   'hint.voiced-marks': 'Check the voiced marks ゛ and ゜.',
   'hint.vowel-length': 'Check the vowel length.',
+  'settings.saving': 'Saving…',
+  'settings.tab.learning': 'Learning',
+  'settings.tab.appearance': 'Appearance',
+  'settings.tab.account': 'Account',
+  'settings.tab.data': 'Data',
+  'settings.tab.about': 'About',
 };
 
 export type MessageKey = keyof typeof en;
@@ -378,7 +380,7 @@ const zhHans: Messages = {
   'inbox.noNew': '收件箱中没有新文件。',
 
   'settings.title': '设置',
-  'settings.sub': '你的语言，以及 Claude 编写测试时的目标。',
+  'settings.sub': '学习目标、外观、账户和数据。',
   'settings.language': '应用语言',
   'settings.theme': '外观',
   'settings.themeDefault': '默认（跟随 Windows）',
@@ -399,7 +401,6 @@ const zhHans: Messages = {
   'custom.needPicture': '请先选择一张图片，或换一个外观。',
   'custom.error': '无法从这张图片中找到颜色。',
   'settings.themeHint': '更换颜色和字体，布局保持不变。',
-  'settings.themeUnsaved': '正在预览。保存设置后才会保留这个外观。',
   'settings.targetLanguage': '学习语言',
   'settings.targetHint': '目前只支持日语，更多语言即将推出。',
   'target.ja': '日语',
@@ -408,7 +409,6 @@ const zhHans: Messages = {
   'target.en': '英语',
   'target.comingSoon': '（即将推出）',
   'settings.languageHint': '应用界面和新生成测试中的题目都会使用这种语言。',
-  'settings.languageUnsaved': '正在预览。保存设置后才会保留这种语言。',
   'settings.level': '水平',
   'settings.levelHint': 'Claude 会按大约这个水平选词和出题。',
   'settings.levelCustomHint': '用自己的话描述你的水平，例如“B1，阅读较强”。',
@@ -461,7 +461,7 @@ const zhHans: Messages = {
     '账号已创建。请打开 Supabase 发来的确认邮件，然后回来登录。',
   'data.title': '你的数据',
   'data.sub':
-    '你的学习进度只保存在这台电脑上。备份可以防止丢失，也可以把它搬到另一台电脑。',
+    '你的学习进度保存在这台电脑上，登录后会同步到你的其他设备。备份是额外的一份副本，可以妥善保存，也可以搬到另一台电脑。',
   'data.backup': '备份…',
   'data.restoreFrom': '从备份恢复…',
   'data.openFolder': '打开数据文件夹',
@@ -469,8 +469,7 @@ const zhHans: Messages = {
   'data.confirm':
     '用 {name} 替换你的数据吗？其中有 {tests} 套测试、{answers} 次作答和 {words} 个单词。你现在的数据会先保存在数据文件夹里。',
   'data.restore': '恢复',
-  'settings.save': '保存设置',
-  'settings.saved': '已保存。下一套测试将使用这些设置。',
+  'settings.saved': '已保存。',
   'settings.invalid': '请填写水平和至少一个主题。每套测试的题数为 5 到 40。',
 
   'review.back': '← 今天',
@@ -492,6 +491,12 @@ const zhHans: Messages = {
   'hint.small-ya': '注意小写的“ゃ / ゅ / ょ”。',
   'hint.voiced-marks': '注意浊音符号“゛”和“゜”。',
   'hint.vowel-length': '注意长音。',
+  'settings.saving': '正在保存…',
+  'settings.tab.learning': '学习',
+  'settings.tab.appearance': '外观',
+  'settings.tab.account': '账户',
+  'settings.tab.data': '数据',
+  'settings.tab.about': '关于',
 };
 
 const zhHant: Messages = {
@@ -613,7 +618,7 @@ const zhHant: Messages = {
   'inbox.noNew': '收件匣中沒有新檔案。',
 
   'settings.title': '設定',
-  'settings.sub': '你的語言，以及 Claude 編寫測驗時的目標。',
+  'settings.sub': '學習目標、外觀、帳號和資料。',
   'settings.language': '應用程式語言',
   'settings.theme': '外觀',
   'settings.themeDefault': '預設（跟隨 Windows）',
@@ -634,7 +639,6 @@ const zhHant: Messages = {
   'custom.needPicture': '請先選擇一張圖片，或換一個外觀。',
   'custom.error': '無法從這張圖片中找到顏色。',
   'settings.themeHint': '更換顏色和字型，版面保持不變。',
-  'settings.themeUnsaved': '正在預覽。儲存設定後才會保留這個外觀。',
   'settings.targetLanguage': '學習語言',
   'settings.targetHint': '目前只支援日語，更多語言即將推出。',
   'target.ja': '日語',
@@ -643,7 +647,6 @@ const zhHant: Messages = {
   'target.en': '英語',
   'target.comingSoon': '（即將推出）',
   'settings.languageHint': '應用程式介面和新產生測驗中的題目都會使用這個語言。',
-  'settings.languageUnsaved': '正在預覽。儲存設定後才會保留這個語言。',
   'settings.level': '程度',
   'settings.levelHint': 'Claude 會依大約這個程度選字和出題。',
   'settings.levelCustomHint': '用自己的話描述你的程度，例如「B1，閱讀較強」。',
@@ -696,7 +699,7 @@ const zhHant: Messages = {
     '帳號已建立。請開啟 Supabase 寄來的確認信，然後回來登入。',
   'data.title': '你的資料',
   'data.sub':
-    '你的學習進度只儲存在這台電腦上。備份可以防止遺失，也可以把它搬到另一台電腦。',
+    '你的學習進度儲存在這台電腦上，登入後會同步到你的其他裝置。備份是額外的一份副本，可以好好保存，也可以搬到另一台電腦。',
   'data.backup': '備份…',
   'data.restoreFrom': '從備份還原…',
   'data.openFolder': '開啟資料夾',
@@ -704,8 +707,7 @@ const zhHant: Messages = {
   'data.confirm':
     '要用 {name} 取代你的資料嗎？其中有 {tests} 份測驗、{answers} 次作答和 {words} 個單字。你現在的資料會先儲存在資料夾裡。',
   'data.restore': '還原',
-  'settings.save': '儲存設定',
-  'settings.saved': '已儲存。下一份測驗將使用這些設定。',
+  'settings.saved': '已儲存。',
   'settings.invalid': '請填寫程度和至少一個主題。每份測驗的題數為 5 到 40。',
 
   'review.back': '← 今天',
@@ -727,6 +729,12 @@ const zhHant: Messages = {
   'hint.small-ya': '注意小寫的「ゃ / ゅ / ょ」。',
   'hint.voiced-marks': '注意濁音符號「゛」和「゜」。',
   'hint.vowel-length': '注意長音。',
+  'settings.saving': '正在儲存…',
+  'settings.tab.learning': '學習',
+  'settings.tab.appearance': '外觀',
+  'settings.tab.account': '帳號',
+  'settings.tab.data': '資料',
+  'settings.tab.about': '關於',
 };
 
 const ko: Messages = {
@@ -850,8 +858,7 @@ const ko: Messages = {
   'inbox.noNew': '수신함에 새 파일이 없습니다.',
 
   'settings.title': '설정',
-  'settings.sub':
-    '사용할 언어와, Claude가 테스트를 만들 때 목표로 할 내용입니다.',
+  'settings.sub': '학습 목표, 화면, 계정, 데이터를 설정합니다.',
   'settings.language': '앱 언어',
   'settings.theme': '스킨',
   'settings.themeDefault': '기본 (Windows 설정 따름)',
@@ -872,8 +879,6 @@ const ko: Messages = {
   'custom.needPicture': '먼저 사진을 선택하거나 다른 스킨을 고르세요.',
   'custom.error': '이 사진에서 색상을 찾지 못했습니다.',
   'settings.themeHint': '색상과 글꼴이 바뀌며, 레이아웃은 그대로입니다.',
-  'settings.themeUnsaved':
-    '미리 보기 중입니다. 이 스킨을 유지하려면 설정을 저장하세요.',
   'settings.targetLanguage': '학습 언어',
   'settings.targetHint':
     '현재는 일본어만 지원합니다. 다른 언어도 곧 추가됩니다.',
@@ -884,8 +889,6 @@ const ko: Messages = {
   'target.comingSoon': '(출시 예정)',
   'settings.languageHint':
     '앱 화면과 새로 생성되는 테스트의 문제에 이 언어가 사용됩니다.',
-  'settings.languageUnsaved':
-    '미리 보기 중입니다. 이 언어를 유지하려면 설정을 저장하세요.',
   'settings.level': '수준',
   'settings.levelHint': 'Claude가 대략 이 수준에 맞춰 단어와 문제를 만듭니다.',
   'settings.levelCustomHint':
@@ -939,7 +942,7 @@ const ko: Messages = {
     '계정을 만들었습니다. Supabase에서 온 확인 메일을 열고 돌아와서 로그인하세요.',
   'data.title': '내 데이터',
   'data.sub':
-    '학습 기록은 이 컴퓨터에만 저장됩니다. 잃어버리지 않도록 백업하거나 다른 PC로 옮길 수 있습니다.',
+    '학습 기록은 이 컴퓨터에 저장되며, 로그인하면 다른 기기와 동기화됩니다. 백업은 안전하게 보관하거나 다른 PC로 옮길 수 있는 추가 사본입니다.',
   'data.backup': '백업…',
   'data.restoreFrom': '백업에서 복원…',
   'data.openFolder': '데이터 폴더 열기',
@@ -947,8 +950,7 @@ const ko: Messages = {
   'data.confirm':
     '{name}(으)로 데이터를 바꿀까요? 테스트 {tests}개, 답변 {answers}개, 단어 {words}개가 들어 있습니다. 현재 데이터는 먼저 데이터 폴더에 저장됩니다.',
   'data.restore': '복원',
-  'settings.save': '설정 저장',
-  'settings.saved': '저장했습니다. 다음 테스트부터 적용됩니다.',
+  'settings.saved': '저장했습니다.',
   'settings.invalid':
     '수준과 주제를 하나 이상 입력하세요. 테스트당 문제 수는 5~40개입니다.',
 
@@ -972,6 +974,12 @@ const ko: Messages = {
   'hint.small-ya': '작은 “ゃ / ゅ / ょ”를 확인하세요.',
   'hint.voiced-marks': '탁점 “゛”과 반탁점 “゜”을 확인하세요.',
   'hint.vowel-length': '장음을 확인하세요.',
+  'settings.saving': '저장 중…',
+  'settings.tab.learning': '학습',
+  'settings.tab.appearance': '화면',
+  'settings.tab.account': '계정',
+  'settings.tab.data': '데이터',
+  'settings.tab.about': '정보',
 };
 
 export const MESSAGES: Record<

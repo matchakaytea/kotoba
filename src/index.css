@@ -331,6 +331,52 @@ input {
   color: var(--muted);
 }
 
+/* Settings tabs */
+.settings-tabs {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: var(--border-width) solid var(--border);
+  margin-bottom: 0.5rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.settings-tabs button {
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  padding: 0.6rem 0.9rem;
+  color: var(--muted);
+  white-space: nowrap;
+  margin-bottom: calc(-1 * var(--border-width));
+}
+
+.settings-tabs button:hover {
+  color: var(--text);
+}
+
+.settings-tabs button.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+/* Where auto-save says it saved; keeps its height so the page doesn't jump. */
+.settings-status {
+  min-height: 1.5rem;
+  margin: 0 0 0.75rem;
+}
+
+/* Panels inside a tab: the tab already names them. */
+.settings-panel .data-panel {
+  margin-top: 0;
+}
+
+.settings-panel .data-panel > h2 {
+  display: none;
+}
+
 /* Offers a newer version of the desktop app */
 .update-banner {
   margin-bottom: 1.25rem;

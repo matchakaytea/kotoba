@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   DEFAULT_BACKDROP,
   LANGUAGES,
-  Settings,
   TARGET_LANGUAGES,
   THEMES,
   type Backdrop,
   type Language,
+  type Settings,
   type Theme,
 } from '../../shared/api';
 import type { CustomColors, Swatch } from '../../shared/palette';
@@ -16,9 +16,27 @@ import { cleanError } from '../format';
 import { useI18n } from '../i18n/i18n';
 import { DataPanel } from '../DataPanel';
 import { SyncPanel } from '../SyncPanel';
+import {
+  differs,
+  draftOf,
+  settingsOf,
+  type SettingsDraft,
+} from '../settings-draft';
 import { UpdatePanel } from '../updates';
 
-type Status = { ok: true } | { ok: false; error: string | null };
+// Changes save on their own this long after the last edit, so typing a
+// topic doesn't save on every key.
+const SAVE_DELAY_MS = 600;
+
+type Tab = 'learning' | 'appearance' | 'account' | 'data' | 'about';
+// Data and About are about the installed app, so the web version leaves
+// them out.
+const TABS: Tab[] =
+  window.kotoba.platform === 'desktop'
+    ? ['learning', 'appearance', 'account', 'data', 'about']
+    : ['learning', 'appearance', 'account'];
+
+type Status = 'saving' | 'saved' | 'invalid' | { error: string } | null;
 
 const JLPT_LEVELS = ['N5', 'N4', 'N3', 'N2', 'N1'] as const;
 type LevelChoice = (typeof JLPT_LEVELS)[number] | 'custom';
@@ -51,150 +69,130 @@ type Props = {
 
 export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
   const { t } = useI18n();
-  const [language, setLanguage] = useState<Language>('en');
-  const [savedLanguage, setSavedLanguage] = useState<Language>('en');
-  const [theme, setTheme] = useState<Theme>('default');
-  const [savedTheme, setSavedTheme] = useState<Theme>('default');
-  const [colors, setColors] = useState<CustomColors | undefined>();
-  const [savedColors, setSavedColors] = useState<CustomColors | undefined>();
+  const [tab, setTab] = useState<Tab>('learning');
+  const [draft, setDraft] = useState<SettingsDraft | null>(null);
+  const [saved, setSaved] = useState<Settings | null>(null);
+  const [levelChoice, setLevelChoice] = useState<LevelChoice>('N2');
   const [swatches, setSwatches] = useState<Swatch[]>([]);
   const [picture, setPicture] = useState<string | null>(null);
   const [savedPicture, setSavedPicture] = useState<string | null>(null);
-  const [backdrop, setBackdrop] = useState<Backdrop>(DEFAULT_BACKDROP);
-  const [savedBackdrop, setSavedBackdrop] =
-    useState<Backdrop>(DEFAULT_BACKDROP);
-  const [level, setLevel] = useState('');
-  const [levelChoice, setLevelChoice] = useState<LevelChoice>('N2');
-  const [topics, setTopics] = useState('');
-  const [questionCount, setQuestionCount] = useState(15);
-  const [wordSource, setWordSource] = useState<'jlpt' | 'free'>('jlpt');
-  const [loaded, setLoaded] = useState(false);
-  const [status, setStatus] = useState<Status | null>(null);
-
-  const savedRef = useRef({
-    language: savedLanguage,
-    theme: savedTheme,
-    colors: savedColors,
-    backdrop: savedBackdrop,
-    picture: savedPicture,
-  });
-  savedRef.current = {
-    language: savedLanguage,
-    theme: savedTheme,
-    colors: savedColors,
-    backdrop: savedBackdrop,
-    picture: savedPicture,
-  };
+  const [status, setStatus] = useState<Status>(null);
 
   useEffect(() => {
-    window.kotoba.getSettings().then((settings) => {
-      setLanguage(settings.language);
-      setSavedLanguage(settings.language);
-      setTheme(settings.theme);
-      setSavedTheme(settings.theme);
-      setColors(settings.customColors);
-      setSavedColors(settings.customColors);
+    Promise.all([
+      window.kotoba.getSettings(),
+      window.kotoba.getSkinPicture(),
+    ]).then(([settings, stored]) => {
+      const loaded = draftOf(settings, DEFAULT_BACKDROP);
+      setDraft(loaded);
+      // Compared in the draft's shape, so just opening Settings saves nothing
+      // (a save would make this device's settings the newest everywhere).
+      setSaved(settingsOf(loaded) ?? settings);
+      setLevelChoice(levelChoiceOf(settings.level));
       if (settings.customColors) {
         setSwatches([
           { hex: settings.customColors.base, share: 1 },
           { hex: settings.customColors.accent, share: 0 },
         ]);
       }
-      setBackdrop(settings.backdrop ?? DEFAULT_BACKDROP);
-      setSavedBackdrop(settings.backdrop ?? DEFAULT_BACKDROP);
-      setLevel(settings.level);
-      setLevelChoice(levelChoiceOf(settings.level));
-      setTopics(settings.topics.join(', '));
-      setQuestionCount(settings.questionCount);
-      setWordSource(settings.wordSource);
-      setLoaded(true);
+      setPicture(stored);
+      setSavedPicture(stored);
     });
-    window.kotoba.getSkinPicture().then((saved) => {
-      setPicture(saved);
-      setSavedPicture(saved);
-    });
-    return () => {
-      const saved = savedRef.current;
-      onLanguageChange(saved.language);
-      onThemeChange(saved.theme, saved.colors, saved.backdrop, saved.picture);
+  }, []);
+
+  // The app shows the language and skin being chosen straight away.
+  useEffect(() => {
+    if (!draft) return;
+    onLanguageChange(draft.language);
+    onThemeChange(draft.theme, draft.colors, draft.backdrop, picture);
+  }, [draft, picture, onLanguageChange, onThemeChange]);
+
+  // Saves a valid change shortly after it's made. `pending` holds a save that
+  // hasn't run yet, so leaving the page can still make it.
+  const pending = useRef<(() => Promise<void>) | null>(null);
+  useEffect(() => {
+    pending.current = null;
+    if (!draft) return;
+    const next = settingsOf(draft);
+    const pictureChanged = picture !== null && picture !== savedPicture;
+    if (!next) {
+      setStatus(
+        draft.theme === 'custom' && !draft.colors
+          ? { error: t('custom.needPicture') }
+          : 'invalid',
+      );
+      return;
+    }
+    if (!differs(next, saved) && !pictureChanged) return;
+
+    const save = async () => {
+      pending.current = null;
+      setStatus('saving');
+      try {
+        if (pictureChanged) {
+          await window.kotoba.saveSkinPicture(picture);
+          setSavedPicture(picture);
+        }
+        setSaved(await window.kotoba.saveSettings(next));
+        setStatus('saved');
+      } catch (e) {
+        setStatus({ error: cleanError(e) });
+      }
     };
-  }, [onLanguageChange, onThemeChange]);
+    pending.current = save;
+    const timer = setTimeout(save, SAVE_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [draft, picture, saved, savedPicture, t]);
 
-  function previewLanguage(next: Language) {
-    setLanguage(next);
-    onLanguageChange(next);
-  }
+  // Leaving Settings: make a waiting save now, or, if the last change can't be
+  // saved, put the app back to the saved language and skin.
+  const latest = useRef({ draft, saved, savedPicture });
+  latest.current = { draft, saved, savedPicture };
+  useEffect(
+    () => () => {
+      if (pending.current) {
+        void pending.current();
+        return;
+      }
+      const {
+        draft: last,
+        saved: kept,
+        savedPicture: keptPicture,
+      } = latest.current;
+      if (last && kept && !settingsOf(last)) {
+        onLanguageChange(kept.language);
+        onThemeChange(
+          kept.theme,
+          kept.customColors,
+          kept.backdrop,
+          keptPicture,
+        );
+      }
+    },
+    [onLanguageChange, onThemeChange],
+  );
 
-  function previewTheme(
-    next: Theme,
-    nextColors = colors,
-    nextBackdrop = backdrop,
-    nextPicture = picture,
-  ) {
-    setTheme(next);
-    setColors(nextColors);
-    setBackdrop(nextBackdrop);
-    setPicture(nextPicture);
-    onThemeChange(next, nextColors, nextBackdrop, nextPicture);
-  }
+  if (!draft) return null;
 
-  function applySwatches(found: Swatch[], dataUrl: string) {
-    setSwatches(found);
-    previewTheme('custom', suggestColors(found), backdrop, dataUrl);
-  }
+  const change = (patch: Partial<SettingsDraft>) =>
+    setDraft((current) => (current ? { ...current, ...patch } : current));
 
   function chooseLevel(choice: LevelChoice) {
     setLevelChoice(choice);
     if (choice === 'custom') {
-      if (levelChoiceOf(level) !== 'custom') setLevel('');
+      if (levelChoiceOf(draft!.level) !== 'custom') change({ level: '' });
     } else {
-      setLevel(jlptLevel(choice));
+      change({ level: jlptLevel(choice) });
     }
   }
 
-  async function save(event: FormEvent) {
-    event.preventDefault();
-    const parsed = Settings.safeParse({
-      language,
-      theme,
-      ...(colors ? { customColors: colors } : {}),
-      backdrop,
-      targetLanguage: 'ja',
-      level,
-      topics: topics
-        .split(/[,、，]/)
-        .map((topic) => topic.trim())
-        .filter(Boolean),
-      questionCount,
-      wordSource,
-    });
-    if (!parsed.success) {
-      setStatus({ ok: false, error: null });
-      return;
-    }
-    if (theme === 'custom' && !colors) {
-      setStatus({ ok: false, error: t('custom.needPicture') });
-      return;
-    }
-    try {
-      if (picture && picture !== savedPicture) {
-        await window.kotoba.saveSkinPicture(picture);
-        setSavedPicture(picture);
-      }
-      const saved = await window.kotoba.saveSettings(parsed.data);
-      setSavedLanguage(saved.language);
-      setSavedTheme(saved.theme);
-      setSavedColors(saved.customColors);
-      setSavedBackdrop(saved.backdrop ?? DEFAULT_BACKDROP);
-      onLanguageChange(saved.language);
-      onThemeChange(saved.theme, saved.customColors, saved.backdrop, picture);
-      setStatus({ ok: true });
-    } catch (e) {
-      setStatus({ ok: false, error: cleanError(e) });
-    }
+  function applySwatches(found: Swatch[], dataUrl: string) {
+    setSwatches(found);
+    setPicture(dataUrl);
+    change({ theme: 'custom', colors: suggestColors(found) });
   }
 
-  if (!loaded) return null;
+  const savable = tab === 'learning' || tab === 'appearance';
 
   return (
     <div className="page">
@@ -205,201 +203,229 @@ export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
         </div>
       </header>
 
-      <form className="form" onSubmit={save} onChange={() => setStatus(null)}>
-        <div className="field-row">
-          <label className="field">
-            <span className="field-label">{t('settings.language')}</span>
-            <span className="select input-medium">
-              <select
-                value={language}
-                onChange={(e) => previewLanguage(e.target.value as Language)}
-              >
-                {LANGUAGES.map((option) => (
-                  <option
-                    key={option.code}
-                    value={option.code}
-                    lang={option.code}
-                  >
-                    {option.name}
-                  </option>
-                ))}
-              </select>
-            </span>
-            <span className="field-hint">
-              {language !== savedLanguage
-                ? t('settings.languageUnsaved')
-                : t('settings.languageHint')}
-            </span>
-          </label>
+      <div className="settings-tabs" role="tablist">
+        {TABS.map((id) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={tab === id}
+            className={tab === id ? 'active' : undefined}
+            onClick={() => setTab(id)}
+          >
+            {t(`settings.tab.${id}`)}
+          </button>
+        ))}
+      </div>
 
-          <label className="field">
-            <span className="field-label">{t('settings.theme')}</span>
-            <span className="select input-medium">
-              <select
-                value={theme}
-                onChange={(e) => previewTheme(e.target.value as Theme)}
-              >
-                {THEMES.map((option) => (
-                  <option key={option.code} value={option.code}>
-                    {option.code === 'default'
-                      ? t('settings.themeDefault')
-                      : option.code === 'custom'
-                        ? t('settings.themeCustom')
-                        : option.name}
-                  </option>
-                ))}
-              </select>
-            </span>
-            <span className="field-hint">
-              {theme !== savedTheme ||
-              JSON.stringify(colors) !== JSON.stringify(savedColors) ||
-              JSON.stringify(backdrop) !== JSON.stringify(savedBackdrop) ||
-              picture !== savedPicture
-                ? t('settings.themeUnsaved')
-                : t('settings.themeHint')}
-            </span>
-          </label>
-        </div>
+      {savable && (
+        <p className="settings-status" aria-live="polite">
+          {status === 'saving' && (
+            <span className="form-status">{t('settings.saving')}</span>
+          )}
+          {status === 'saved' && (
+            <span className="form-status ok">{t('settings.saved')}</span>
+          )}
+          {status === 'invalid' && (
+            <span className="form-status error">{t('settings.invalid')}</span>
+          )}
+          {status && typeof status === 'object' && (
+            <span className="form-status error">{status.error}</span>
+          )}
+        </p>
+      )}
 
-        {theme === 'custom' && (
-          <CustomSkinPanel
-            colors={colors}
-            swatches={swatches}
-            picture={picture}
-            onPicture={applySwatches}
-            onChange={(next) => previewTheme('custom', next)}
-            backdrop={backdrop}
-            onBackdropChange={(next) =>
-              previewTheme('custom', colors, next, picture)
-            }
-          />
-        )}
+      {tab === 'learning' && (
+        <div className="form" role="tabpanel">
+          <div className="field-row">
+            <div className="field">
+              <label className="field-label" htmlFor="target-language">
+                {t('settings.targetLanguage')}
+              </label>
+              <span className="select input-medium">
+                <select id="target-language" value="ja" onChange={() => {}}>
+                  {TARGET_LANGUAGES.map((target) => {
+                    const name = t(`target.${target.code}`);
+                    const native = NATIVE_NAMES[target.code];
+                    return (
+                      <option
+                        key={target.code}
+                        value={target.code}
+                        disabled={!target.available}
+                      >
+                        {name === native ? name : `${name} · ${native}`}
+                        {!target.available && ` ${t('target.comingSoon')}`}
+                      </option>
+                    );
+                  })}
+                </select>
+              </span>
+              <span className="field-hint">{t('settings.targetHint')}</span>
+            </div>
 
-        <div className="field-row">
-          <div className="field">
-            <label className="field-label" htmlFor="target-language">
-              {t('settings.targetLanguage')}
-            </label>
-            <span className="select input-medium">
-              <select id="target-language" value="ja" onChange={() => {}}>
-                {TARGET_LANGUAGES.map((target) => {
-                  const name = t(`target.${target.code}`);
-                  const native = NATIVE_NAMES[target.code];
-                  return (
-                    <option
-                      key={target.code}
-                      value={target.code}
-                      disabled={!target.available}
-                    >
-                      {name === native ? name : `${name} · ${native}`}
-                      {!target.available && ` ${t('target.comingSoon')}`}
+            <div className="field">
+              <label className="field-label" htmlFor="level">
+                {t('settings.level')}
+              </label>
+              <span className="select input-medium">
+                <select
+                  id="level"
+                  value={levelChoice}
+                  onChange={(e) => chooseLevel(e.target.value as LevelChoice)}
+                >
+                  {JLPT_LEVELS.map((jlpt) => (
+                    <option key={jlpt} value={jlpt}>
+                      {jlpt} · {t(`level.${jlpt}`)}
                     </option>
-                  );
-                })}
-              </select>
-            </span>
-            <span className="field-hint">{t('settings.targetHint')}</span>
+                  ))}
+                  <option value="custom">{t('level.custom')}</option>
+                </select>
+              </span>
+              {levelChoice === 'custom' && (
+                <input
+                  aria-label={t('settings.level')}
+                  value={draft.level}
+                  onChange={(e) => change({ level: e.target.value })}
+                  placeholder="B1, strong reading"
+                  autoFocus
+                />
+              )}
+              <span className="field-hint">
+                {levelChoice === 'custom'
+                  ? t('settings.levelCustomHint')
+                  : t('settings.levelHint')}
+              </span>
+            </div>
           </div>
 
-          <div className="field">
-            <label className="field-label" htmlFor="level">
-              {t('settings.level')}
-            </label>
+          <label className="field">
+            <span className="field-label">{t('settings.wordSource')}</span>
             <span className="select input-medium">
               <select
-                id="level"
-                value={levelChoice}
-                onChange={(e) => chooseLevel(e.target.value as LevelChoice)}
+                value={levelChoice === 'custom' ? 'free' : draft.wordSource}
+                disabled={levelChoice === 'custom'}
+                onChange={(e) =>
+                  change({ wordSource: e.target.value as 'jlpt' | 'free' })
+                }
               >
-                {JLPT_LEVELS.map((jlpt) => (
-                  <option key={jlpt} value={jlpt}>
-                    {jlpt} · {t(`level.${jlpt}`)}
-                  </option>
-                ))}
-                <option value="custom">{t('level.custom')}</option>
+                <option value="jlpt">
+                  {t('settings.wordSourceJlpt', {
+                    level: levelChoice === 'custom' ? 'N?' : levelChoice,
+                  })}
+                </option>
+                <option value="free">{t('settings.wordSourceFree')}</option>
               </select>
             </span>
-            {levelChoice === 'custom' && (
-              <input
-                aria-label={t('settings.level')}
-                value={level}
-                onChange={(e) => setLevel(e.target.value)}
-                placeholder="B1, strong reading"
-                autoFocus
-              />
-            )}
             <span className="field-hint">
               {levelChoice === 'custom'
-                ? t('settings.levelCustomHint')
-                : t('settings.levelHint')}
+                ? t('settings.wordSourceCustom')
+                : t('settings.wordSourceHint')}
             </span>
-          </div>
+          </label>
+
+          <label className="field">
+            <span className="field-label">{t('settings.topics')}</span>
+            <input
+              value={draft.topics}
+              onChange={(e) => change({ topics: e.target.value })}
+              placeholder="IT, workplace, travel"
+            />
+            <span className="field-hint">{t('settings.topicsHint')}</span>
+          </label>
+
+          <label className="field">
+            <span className="field-label">{t('settings.questionCount')}</span>
+            <input
+              type="number"
+              min={5}
+              max={40}
+              value={draft.questionCount}
+              onChange={(e) =>
+                change({ questionCount: Number(e.target.value) })
+              }
+              className="input-short"
+            />
+          </label>
         </div>
+      )}
 
-        <label className="field">
-          <span className="field-label">{t('settings.wordSource')}</span>
-          <span className="select input-medium">
-            <select
-              value={levelChoice === 'custom' ? 'free' : wordSource}
-              disabled={levelChoice === 'custom'}
-              onChange={(e) => setWordSource(e.target.value as 'jlpt' | 'free')}
-            >
-              <option value="jlpt">
-                {t('settings.wordSourceJlpt', {
-                  level: levelChoice === 'custom' ? 'N?' : levelChoice,
-                })}
-              </option>
-              <option value="free">{t('settings.wordSourceFree')}</option>
-            </select>
-          </span>
-          <span className="field-hint">
-            {levelChoice === 'custom'
-              ? t('settings.wordSourceCustom')
-              : t('settings.wordSourceHint')}
-          </span>
-        </label>
+      {tab === 'appearance' && (
+        <div className="form" role="tabpanel">
+          <div className="field-row">
+            <label className="field">
+              <span className="field-label">{t('settings.language')}</span>
+              <span className="select input-medium">
+                <select
+                  value={draft.language}
+                  onChange={(e) =>
+                    change({ language: e.target.value as Language })
+                  }
+                >
+                  {LANGUAGES.map((option) => (
+                    <option
+                      key={option.code}
+                      value={option.code}
+                      lang={option.code}
+                    >
+                      {option.name}
+                    </option>
+                  ))}
+                </select>
+              </span>
+              <span className="field-hint">{t('settings.languageHint')}</span>
+            </label>
 
-        <label className="field">
-          <span className="field-label">{t('settings.topics')}</span>
-          <input
-            value={topics}
-            onChange={(e) => setTopics(e.target.value)}
-            placeholder="IT, workplace, travel"
-          />
-          <span className="field-hint">{t('settings.topicsHint')}</span>
-        </label>
+            <label className="field">
+              <span className="field-label">{t('settings.theme')}</span>
+              <span className="select input-medium">
+                <select
+                  value={draft.theme}
+                  onChange={(e) => change({ theme: e.target.value as Theme })}
+                >
+                  {THEMES.map((option) => (
+                    <option key={option.code} value={option.code}>
+                      {option.code === 'default'
+                        ? t('settings.themeDefault')
+                        : option.code === 'custom'
+                          ? t('settings.themeCustom')
+                          : option.name}
+                    </option>
+                  ))}
+                </select>
+              </span>
+              <span className="field-hint">{t('settings.themeHint')}</span>
+            </label>
+          </div>
 
-        <label className="field">
-          <span className="field-label">{t('settings.questionCount')}</span>
-          <input
-            type="number"
-            min={5}
-            max={40}
-            value={questionCount}
-            onChange={(e) => setQuestionCount(Number(e.target.value))}
-            className="input-short"
-          />
-        </label>
-
-        <div className="form-actions">
-          <button type="submit" className="primary">
-            {t('settings.save')}
-          </button>
-          {status && (
-            <span
-              className={status.ok ? 'form-status ok' : 'form-status error'}
-            >
-              {status.ok
-                ? t('settings.saved')
-                : (status.error ?? t('settings.invalid'))}
-            </span>
+          {draft.theme === 'custom' && (
+            <CustomSkinPanel
+              colors={draft.colors}
+              swatches={swatches}
+              picture={picture}
+              onPicture={applySwatches}
+              onChange={(colors) => change({ theme: 'custom', colors })}
+              backdrop={draft.backdrop}
+              onBackdropChange={(backdrop) => change({ backdrop })}
+            />
           )}
         </div>
-      </form>
+      )}
 
-      <SyncPanel />
-      {window.kotoba.platform === 'desktop' && <DataPanel />}
-      {window.kotoba.platform === 'desktop' && <UpdatePanel />}
+      {tab === 'account' && (
+        <div className="settings-panel" role="tabpanel">
+          <SyncPanel />
+        </div>
+      )}
+      {tab === 'data' && (
+        <div className="settings-panel" role="tabpanel">
+          <DataPanel />
+        </div>
+      )}
+      {tab === 'about' && (
+        <div className="settings-panel" role="tabpanel">
+          <UpdatePanel />
+        </div>
+      )}
     </div>
   );
 }
