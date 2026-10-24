@@ -38,6 +38,16 @@ const en = {
   'settings.wordSourceHint':
     'With the list, Claude teaches words you have not practised yet, and your topics set the theme of the questions.',
   'settings.wordSourceCustom': 'Choose a JLPT level to use the word lists.',
+  'settings.routine': 'Daily routine',
+  'settings.easierWords': 'Fill gaps from easier levels',
+  'settings.easierWordsHint':
+    "About a quarter of each test's new words come from easier JLPT levels you haven't practised yet, easiest first. Questions stay at your level.",
+  'settings.autoGenerate': "Make today's test automatically",
+  'settings.autoGenerateHint':
+    'When the desktop app is open and there is no test for today yet, Claude writes one. You can still generate more by hand.',
+  'settings.studyFirst': 'Study before the review',
+  'settings.studyFirstHint':
+    "Start review first shows today's new words and your recent mistakes, then the test.",
   'nav.settings': 'Settings',
 
   'today.dueCount': '{count} due today',
@@ -54,6 +64,20 @@ const en = {
   'today.answers': '{count} answers',
   'today.accuracy': '{percent}% correct',
   'today.targets': '{count} words and skills',
+  'study.title': 'Study first',
+  'study.words': 'New words · {index} / {total}',
+  'study.mistakes':
+    'Recent mistakes · {index} / {total}. Try to recall the answer',
+  'study.showAnswer': 'Show answer',
+  'study.next': 'Next →',
+  'study.skip': 'Skip to the test',
+  'study.ready': 'Ready for the test',
+  'study.readySub':
+    'Now try to recall them. Getting some wrong is fine: those come back sooner.',
+  'study.start': 'Start the test',
+  'study.noMeaning': 'Not in Vocabulary. The test will show what it means.',
+  'study.yourAnswer': 'You answered: {answer}',
+  'today.autoGenerating': "Making today's test…",
 
   'status.new': 'new',
   'status.due': 'due',
@@ -321,6 +345,16 @@ const zhHans: Messages = {
   'settings.wordSourceHint':
     '使用词汇表时，Claude 会教你还没练过的单词，主题则决定题目的内容。',
   'settings.wordSourceCustom': '选择一个 JLPT 等级后才能使用词汇表。',
+  'settings.routine': '每日安排',
+  'settings.easierWords': '从较低等级补漏',
+  'settings.easierWordsHint':
+    '每次测验约四分之一的新单词来自你还没练过的较低 JLPT 等级，从最简单的开始。题目难度仍按你的等级。',
+  'settings.autoGenerate': '自动生成今天的测验',
+  'settings.autoGenerateHint':
+    '桌面版打开时，如果今天还没有测验，Claude 会自动写一份。你仍然可以手动再生成。',
+  'settings.studyFirst': '复习前先学习',
+  'settings.studyFirstHint':
+    '点击开始复习后，先看今天的新单词和最近的错题，然后再做测验。',
   'nav.settings': '设置',
 
   'today.dueCount': '今天有 {count} 个待复习',
@@ -337,6 +371,18 @@ const zhHans: Messages = {
   'today.answers': '{count} 次作答',
   'today.accuracy': '正确率 {percent}%',
   'today.targets': '{count} 个词与技能',
+  'study.title': '先学习',
+  'study.words': '新单词 · {index} / {total}',
+  'study.mistakes': '最近的错题 · {index} / {total}。先试着回想答案',
+  'study.showAnswer': '显示答案',
+  'study.next': '下一个 →',
+  'study.skip': '跳到测验',
+  'study.ready': '准备好做测验了',
+  'study.readySub': '现在试着回想它们。答错也没关系，答错的会更早再出现。',
+  'study.start': '开始测验',
+  'study.noMeaning': '词汇表里没有这个词，测验中会看到它的意思。',
+  'study.yourAnswer': '你的回答：{answer}',
+  'today.autoGenerating': '正在生成今天的测验…',
 
   'status.new': '新',
   'status.due': '待复习',
@@ -576,6 +622,16 @@ const zhHant: Messages = {
   'settings.wordSourceHint':
     '使用單字表時，Claude 會教你還沒練過的單字，主題則決定題目的內容。',
   'settings.wordSourceCustom': '選擇一個 JLPT 等級後才能使用單字表。',
+  'settings.routine': '每日安排',
+  'settings.easierWords': '從較低等級補漏',
+  'settings.easierWordsHint':
+    '每次測驗約四分之一的新單字來自你還沒練過的較低 JLPT 等級，從最簡單的開始。題目難度仍依你的等級。',
+  'settings.autoGenerate': '自動產生今天的測驗',
+  'settings.autoGenerateHint':
+    '桌面版開啟時，如果今天還沒有測驗，Claude 會自動寫一份。你仍然可以手動再產生。',
+  'settings.studyFirst': '複習前先學習',
+  'settings.studyFirstHint':
+    '按下開始複習後，先看今天的新單字和最近的錯題，然後再做測驗。',
   'nav.settings': '設定',
 
   'today.dueCount': '今天有 {count} 個待複習',
@@ -592,6 +648,18 @@ const zhHant: Messages = {
   'today.answers': '{count} 次作答',
   'today.accuracy': '正確率 {percent}%',
   'today.targets': '{count} 個單字與技能',
+  'study.title': '先學習',
+  'study.words': '新單字 · {index} / {total}',
+  'study.mistakes': '最近的錯題 · {index} / {total}。先試著回想答案',
+  'study.showAnswer': '顯示答案',
+  'study.next': '下一個 →',
+  'study.skip': '跳到測驗',
+  'study.ready': '準備好做測驗了',
+  'study.readySub': '現在試著回想它們。答錯也沒關係，答錯的會更早再出現。',
+  'study.start': '開始測驗',
+  'study.noMeaning': '單字表裡沒有這個字，測驗中會看到它的意思。',
+  'study.yourAnswer': '你的回答：{answer}',
+  'today.autoGenerating': '正在產生今天的測驗…',
 
   'status.new': '新',
   'status.due': '待複習',
@@ -832,6 +900,16 @@ const ko: Messages = {
   'settings.wordSourceHint':
     '목록을 사용하면 Claude가 아직 연습하지 않은 단어를 가르치고, 주제는 문제의 내용을 정합니다.',
   'settings.wordSourceCustom': '어휘 목록을 쓰려면 JLPT 레벨을 선택하세요.',
+  'settings.routine': '매일 루틴',
+  'settings.easierWords': '쉬운 레벨의 빈틈 채우기',
+  'settings.easierWordsHint':
+    '테스트마다 새 단어의 약 4분의 1은 아직 연습하지 않은 더 쉬운 JLPT 레벨에서, 가장 쉬운 것부터 나옵니다. 문제 난이도는 내 레벨 그대로입니다.',
+  'settings.autoGenerate': '오늘의 테스트 자동으로 만들기',
+  'settings.autoGenerateHint':
+    '데스크톱 앱이 열려 있고 오늘 테스트가 아직 없으면 Claude가 하나 만듭니다. 직접 더 만들 수도 있습니다.',
+  'settings.studyFirst': '복습 전에 먼저 공부하기',
+  'settings.studyFirstHint':
+    '복습 시작을 누르면 오늘의 새 단어와 최근 틀린 문제를 먼저 보고 테스트로 넘어갑니다.',
   'nav.settings': '설정',
 
   'today.dueCount': '오늘 복습할 항목 {count}개',
@@ -848,6 +926,21 @@ const ko: Messages = {
   'today.answers': '답변 {count}개',
   'today.accuracy': '정답률 {percent}%',
   'today.targets': '단어·기술 {count}개',
+  'study.title': '먼저 공부하기',
+  'study.words': '새 단어 · {index} / {total}',
+  'study.mistakes':
+    '최근 틀린 문제 · {index} / {total}. 먼저 답을 떠올려 보세요',
+  'study.showAnswer': '답 보기',
+  'study.next': '다음 →',
+  'study.skip': '테스트로 건너뛰기',
+  'study.ready': '테스트 준비 완료',
+  'study.readySub':
+    '이제 떠올려 보세요. 틀려도 괜찮아요. 틀린 단어는 더 빨리 다시 나옵니다.',
+  'study.start': '테스트 시작',
+  'study.noMeaning':
+    '어휘 목록에 없는 단어입니다. 테스트에서 뜻을 볼 수 있어요.',
+  'study.yourAnswer': '내 답: {answer}',
+  'today.autoGenerating': '오늘의 테스트를 만드는 중…',
 
   'status.new': '새 항목',
   'status.due': '복습 예정',

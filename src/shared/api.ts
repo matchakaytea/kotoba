@@ -48,6 +48,24 @@ export type Session = {
   items: SessionItem[];
 };
 
+/** A new word in today's review, to look at before the test. */
+export type StudyWord = {
+  expression: string;
+  reading: string | null;
+  /** Null when the word is not in Vocabulary. */
+  meaningEn: string | null;
+  meaningSc: string | null;
+  meaningTc: string | null;
+  example: VocabExample | null;
+  level: VocabEntry['level'] | null;
+};
+
+/** What the Study screen shows before today's review. */
+export type StudyPlan = {
+  words: StudyWord[];
+  mistakes: Mistake[];
+};
+
 export type ImportReport = {
   imported: { file: string; title: string; questions: number }[];
   rejected: { file: string; errors: string[] }[];
@@ -116,6 +134,12 @@ export const Settings = z.strictObject({
   topics: z.array(z.string().trim().min(1).max(50)).min(1).max(10),
   questionCount: z.number().int().min(5).max(40),
   wordSource: z.enum(['jlpt', 'free']).default('jlpt'),
+  // Mix a few unpractised words from easier JLPT levels into the new words.
+  easierWords: z.boolean().default(true),
+  // Make today's test on its own when the desktop app opens.
+  autoGenerate: z.boolean().default(true),
+  // Show the Study screen before the review.
+  studyFirst: z.boolean().default(true),
 });
 
 export type Settings = z.infer<typeof Settings>;
@@ -129,6 +153,9 @@ export const DEFAULT_SETTINGS: Settings = {
   topics: ['IT', 'software engineering', 'workplace'],
   questionCount: 15,
   wordSource: 'jlpt',
+  easierWords: true,
+  autoGenerate: true,
+  studyFirst: true,
 };
 
 export type Mistake = {
@@ -172,6 +199,9 @@ export interface KotobaApi {
   copyBrief(): Promise<void>;
   claudeStatus(): Promise<{ found: boolean }>;
   generateTest(): Promise<ImportReport>;
+  /** Whether Kotoba should make today's test on its own now. */
+  shouldAutoGenerate(): Promise<boolean>;
+  getStudyPlan(): Promise<StudyPlan>;
   getMistakes(): Promise<Mistake[]>;
   dismissMistake(id: number): Promise<Mistake[]>;
   getLibrary(): Promise<LibraryTest[]>;

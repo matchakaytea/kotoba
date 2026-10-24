@@ -123,6 +123,31 @@ function tierRank(entry: VocabEntry): number {
   return entry.tier ? TIER_RANK[entry.tier] : 1;
 }
 
+/** Words in none of your tests yet that `keep` accepts, in a random order. */
+function freshWords(
+  db: DatabaseSync,
+  keep: (entry: VocabEntry) => boolean,
+  random: () => number,
+  list: VocabEntry[],
+): VocabEntry[] {
+  const used = new Set(
+    (
+      db.prepare('SELECT DISTINCT expression FROM targets').all() as {
+        expression: string;
+      }[]
+    ).map((row) => row.expression),
+  );
+  const fresh = list.filter(
+    (entry) =>
+      keep(entry) && !writings(entry).some((writing) => used.has(writing)),
+  );
+  for (let i = fresh.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [fresh[i], fresh[j]] = [fresh[j], fresh[i]];
+  }
+  return fresh;
+}
+
 /**
  * Picks words from the level that are in none of your tests yet: common words
  * first, in a random order within each frequency tier.
@@ -134,23 +159,33 @@ export function pickNewWords(
   random = Math.random,
   list: VocabEntry[] = VOCAB,
 ): VocabEntry[] {
-  const used = new Set(
-    (
-      db.prepare('SELECT DISTINCT expression FROM targets').all() as {
-        expression: string;
-      }[]
-    ).map((row) => row.expression),
-  );
-  const fresh = list.filter(
-    (entry) =>
-      entry.level === level &&
-      !writings(entry).some((writing) => used.has(writing)),
-  );
-  for (let i = fresh.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1));
-    [fresh[i], fresh[j]] = [fresh[j], fresh[i]];
-  }
-  return fresh.sort((a, b) => tierRank(a) - tierRank(b)).slice(0, count);
+  return freshWords(db, (entry) => entry.level === level, random, list)
+    .sort((a, b) => tierRank(a) - tierRank(b))
+    .slice(0, count);
+}
+
+/**
+ * Picks words from levels easier than `level` that are in none of your tests
+ * yet, to fill gaps: the easiest level first, common words first within it.
+ */
+export function pickEasierWords(
+  db: DatabaseSync,
+  level: Level,
+  count: number,
+  random = Math.random,
+  list: VocabEntry[] = VOCAB,
+): VocabEntry[] {
+  return freshWords(db, (entry) => entry.level > level, random, list)
+    .sort((a, b) => b.level - a.level || tierRank(a) - tierRank(b))
+    .slice(0, count);
+}
+
+/** The Vocabulary entry for a word, by any of its spellings. */
+export function entryOf(
+  expression: string,
+  list: VocabEntry[] = VOCAB,
+): VocabEntry | undefined {
+  return list.find((entry) => writings(entry).includes(expression));
 }
 
 /** The reading of a word as Vocabulary has it, by any of its spellings. */
@@ -158,7 +193,7 @@ export function readingOf(
   expression: string,
   list: VocabEntry[] = VOCAB,
 ): string | undefined {
-  return list.find((entry) => writings(entry).includes(expression))?.reading;
+  return entryOf(expression, list)?.reading;
 }
 
 /** Words you have practised that are not in Vocabulary, with their status. */

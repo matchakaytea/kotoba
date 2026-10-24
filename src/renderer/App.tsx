@@ -4,6 +4,7 @@ import type {
   ImportReport,
   Language,
   Session,
+  StudyPlan,
   SyncStatus,
   Theme,
 } from '../shared/api';
@@ -21,12 +22,14 @@ import { TodayPage } from './pages/TodayPage';
 import { Sidebar, type Page } from './Sidebar';
 import { TestRunner } from './TestRunner';
 import { SkinBackdrop } from './SkinBackdrop';
+import { StudyScreen } from './StudyScreen';
 import { UpdateBanner } from './updates';
 import { applyTheme } from './theme';
 
 // Choosing to go on without signing in lasts until Kotoba is closed; the
 // next start asks again.
 const GUEST_KEY = 'kotoba-guest';
+const AUTO_CHECK_MS = 15 * 60_000;
 
 function readGuest(): boolean {
   try {
@@ -57,8 +60,10 @@ export function App() {
   const [skin, setSkin] = useState<Skin>({ theme: 'default' });
   const [page, setPage] = useState<Page>('today');
   const [session, setSession] = useState<Session | null>(null);
+  const [study, setStudy] = useState<StudyPlan | null>(null);
   const [claudeAvailable, setClaudeAvailable] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [autoGenerating, setAutoGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [lastReport, setLastReport] = useState<ImportReport | null>(null);
   // Bumped when a sync brings in changes, so the open page reloads its data.
@@ -125,12 +130,30 @@ export function App() {
   );
 
   async function start() {
+    const [next, settings] = await Promise.all([
+      window.kotoba.getSession(),
+      window.kotoba.getSettings(),
+    ]);
+    if (next.items.length === 0) return;
+    if (settings.studyFirst) {
+      const plan = await window.kotoba.getStudyPlan();
+      if (plan.words.length + plan.mistakes.length > 0) {
+        setStudy(plan);
+        return;
+      }
+    }
+    setSession(next);
+  }
+
+  async function startAfterStudy() {
     const next = await window.kotoba.getSession();
+    setStudy(null);
     if (next.items.length > 0) setSession(next);
   }
 
-  async function generate() {
+  const generate = useCallback(async (auto = false) => {
     setGenerating(true);
+    setAutoGenerating(auto);
     setGenerateError(null);
     try {
       setLastReport(await window.kotoba.generateTest());
@@ -138,17 +161,50 @@ export function App() {
       setGenerateError(cleanError(e));
     } finally {
       setGenerating(false);
+      setAutoGenerating(false);
     }
-  }
+  }, []);
+
+  // Makes today's test on its own once a day: when Kotoba opens, and when it
+  // is still open after midnight. A failed try waits for the next start.
+  const signedIn = Boolean(account?.email);
+  const autoTried = useRef<string | null>(null);
+  const autoChecking = useRef(false);
+  useEffect(() => {
+    if (!claudeAvailable || !signedIn) return;
+    async function check() {
+      const day = new Date().toDateString();
+      if (autoTried.current === day || autoChecking.current) return;
+      autoChecking.current = true;
+      try {
+        if (!(await window.kotoba.shouldAutoGenerate())) return;
+      } finally {
+        autoChecking.current = false;
+      }
+      autoTried.current = day;
+      void generate(true);
+    }
+    void check();
+    const timer = setInterval(check, AUTO_CHECK_MS);
+    window.addEventListener('focus', check);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('focus', check);
+    };
+  }, [claudeAvailable, signedIn, generate]);
 
   const exitSession = useCallback(() => {
     setSession(null);
     setPage('today');
   }, []);
 
+  const exitStudy = useCallback(() => {
+    setStudy(null);
+    setPage('today');
+  }, []);
+
   if (!language || !account) return null;
 
-  const signedIn = Boolean(account.email);
   const accountValue = {
     signedIn,
     openSignIn: () => setSigningIn(true),
@@ -178,6 +234,12 @@ export function App() {
             }}
             onBack={signingIn ? () => setSigningIn(false) : undefined}
           />
+        ) : study ? (
+          <StudyScreen
+            plan={study}
+            onStart={startAfterStudy}
+            onExit={exitStudy}
+          />
         ) : session ? (
           <TestRunner session={session} onExit={exitSession} />
         ) : (
@@ -193,9 +255,10 @@ export function App() {
                     // Tests made while signed out wouldn't be kept.
                     available: claudeAvailable && signedIn,
                     running: generating,
+                    auto: autoGenerating,
                     error: generateError,
                     lastReport,
-                    run: generate,
+                    run: () => void generate(),
                   }}
                 />
               )}

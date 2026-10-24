@@ -16,6 +16,9 @@ export type SettingsDraft = {
   topics: string;
   questionCount: number;
   wordSource: 'jlpt' | 'free';
+  easierWords: boolean;
+  autoGenerate: boolean;
+  studyFirst: boolean;
 };
 
 export function draftOf(settings: Settings, backdrop: Backdrop): SettingsDraft {
@@ -28,6 +31,9 @@ export function draftOf(settings: Settings, backdrop: Backdrop): SettingsDraft {
     topics: settings.topics.join(', '),
     questionCount: settings.questionCount,
     wordSource: settings.wordSource,
+    easierWords: settings.easierWords,
+    autoGenerate: settings.autoGenerate,
+    studyFirst: settings.studyFirst,
   };
 }
 
@@ -55,6 +61,9 @@ export function settingsOf(draft: SettingsDraft): Settings | null {
     topics: splitTopics(draft.topics),
     questionCount: draft.questionCount,
     wordSource: draft.wordSource,
+    easierWords: draft.easierWords,
+    autoGenerate: draft.autoGenerate,
+    studyFirst: draft.studyFirst,
   });
   return parsed.success ? parsed.data : null;
 }

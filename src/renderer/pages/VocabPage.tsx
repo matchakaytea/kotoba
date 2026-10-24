@@ -7,8 +7,8 @@ import type {
   VocabQuery,
   WordStatus,
 } from '../../shared/api';
-import { parseFurigana } from '../../shared/furigana';
 import type { Language } from '../../shared/languages';
+import { Furigana } from '../Furigana';
 import { useI18n } from '../i18n/i18n';
 
 const PAGE_SIZE = 100;
@@ -310,18 +310,7 @@ function VocabDetail({
       {entry.examples.map((example, i) => (
         <div key={i} className="vocab-example">
           <p lang="ja" className="vocab-sentence">
-            {parseFurigana(example.furigana).map((part, j) =>
-              part.ruby ? (
-                <ruby key={j} className={part.target ? 'target' : undefined}>
-                  {part.text}
-                  <rt>{part.ruby}</rt>
-                </ruby>
-              ) : (
-                <span key={j} className={part.target ? 'target' : undefined}>
-                  {part.text}
-                </span>
-              ),
-            )}
+            <Furigana source={example.furigana} />
           </p>
           <p className="cell-muted">
             {meaning === 'tc' ? example.tc : example.sc}

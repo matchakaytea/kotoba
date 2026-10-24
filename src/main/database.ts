@@ -430,6 +430,22 @@ export function getTest(
   };
 }
 
+/**
+ * Whether Claude already made the test for `day`, counting one deleted since
+ * (generated tests are named claude-<day>-…).
+ */
+export function madeTestOn(db: DatabaseSync, day: string): boolean {
+  const pattern = `claude-${day}-%`;
+  return (
+    db
+      .prepare(
+        `SELECT 1 FROM tests WHERE id LIKE ?
+         UNION ALL SELECT 1 FROM deleted_tests WHERE id LIKE ?`,
+      )
+      .get(pattern, pattern) !== undefined
+  );
+}
+
 export function getLibrary(db: DatabaseSync): LibraryTest[] {
   const ids = db
     .prepare('SELECT id FROM tests ORDER BY imported_at DESC')
