@@ -8,6 +8,8 @@ import { ImportNotice } from '../ImportNotice';
 export type Generation = {
   available: boolean;
   running: boolean;
+  /** Making today's test on its own, not from the button. */
+  auto: boolean;
   error: string | null;
   lastReport: ImportReport | null;
   run: () => void;
@@ -119,7 +121,10 @@ export function TodayPage({ generation, onStart }: Props) {
       </header>
 
       {generation.running && (
-        <p className="notice notice-info">{t('today.generatingNotice')}</p>
+        <p className="notice notice-info">
+          {generation.auto && <strong>{t('today.autoGenerating')} </strong>}
+          {t('today.generatingNotice')}
+        </p>
       )}
       {generation.error && <p className="notice error">{generation.error}</p>}
       {report && <ImportNotice report={report} onDismiss={dismissReport} />}

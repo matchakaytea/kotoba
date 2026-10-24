@@ -193,6 +193,11 @@ export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
   }
 
   const savable = tab === 'learning' || tab === 'appearance';
+  // Easier levels need the JLPT list and a level above N5.
+  const easierAvailable =
+    draft.wordSource === 'jlpt' &&
+    levelChoice !== 'custom' &&
+    levelChoice !== 'N5';
 
   return (
     <div className="page">
@@ -346,6 +351,31 @@ export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
               className="input-short"
             />
           </label>
+
+          <fieldset className="field check-group">
+            <legend className="field-label">{t('settings.routine')}</legend>
+            <Check
+              checked={easierAvailable && draft.easierWords}
+              disabled={!easierAvailable}
+              onChange={(easierWords) => change({ easierWords })}
+              label={t('settings.easierWords')}
+              hint={t('settings.easierWordsHint')}
+            />
+            {window.kotoba.platform === 'desktop' && (
+              <Check
+                checked={draft.autoGenerate}
+                onChange={(autoGenerate) => change({ autoGenerate })}
+                label={t('settings.autoGenerate')}
+                hint={t('settings.autoGenerateHint')}
+              />
+            )}
+            <Check
+              checked={draft.studyFirst}
+              onChange={(studyFirst) => change({ studyFirst })}
+              label={t('settings.studyFirst')}
+              hint={t('settings.studyFirstHint')}
+            />
+          </fieldset>
         </div>
       )}
 
@@ -427,5 +457,30 @@ export function SettingsPage({ onLanguageChange, onThemeChange }: Props) {
         </div>
       )}
     </div>
+  );
+}
+
+type CheckProps = {
+  checked: boolean;
+  disabled?: boolean;
+  onChange: (checked: boolean) => void;
+  label: string;
+  hint: string;
+};
+
+function Check({ checked, disabled, onChange, label, hint }: CheckProps) {
+  return (
+    <label className="check">
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      <span>
+        <span className="check-label">{label}</span>
+        <span className="field-hint">{hint}</span>
+      </span>
+    </label>
   );
 }

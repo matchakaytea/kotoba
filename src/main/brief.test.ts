@@ -105,6 +105,7 @@ describe('missingNewWords', () => {
   const word = (expression: string) => ({
     expression,
     readings: ['よみ'],
+    jlpt: 'N2',
     meaning: 'meaning',
     meaning_zh_hans: '含义',
     meaning_zh_hant: '含義',

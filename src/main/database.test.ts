@@ -504,6 +504,9 @@ describe('settings', () => {
       topics: ['finance'],
       questionCount: 25,
       wordSource: 'free' as const,
+      easierWords: false,
+      autoGenerate: false,
+      studyFirst: false,
     };
     saveSettings(db, settings);
     expect(getSettings(db)).toEqual(settings);
@@ -635,6 +638,9 @@ describe('settings saved before languages existed', () => {
       topics: ['travel'],
       questionCount: 20,
       wordSource: 'jlpt',
+      easierWords: true,
+      autoGenerate: true,
+      studyFirst: true,
     });
   });
 });

@@ -13,6 +13,7 @@ import {
   VOCAB,
   levelOf,
   otherWords,
+  pickEasierWords,
   pickNewWords,
   readingOf,
   searchVocab,
@@ -196,6 +197,7 @@ describe('pickNewWords', () => {
 
 describe('brief with the vocabulary list', () => {
   it('hands Claude new words from the chosen level', () => {
+    saveSettings(db, { ...getSettings(db), easierWords: false });
     const brief = buildBrief(db, new Date(2026, 9, 1), () => 0.3);
     expect(brief.word_list).toBe('JLPT N2');
     expect(brief.new_words).toHaveLength(15);
@@ -210,6 +212,18 @@ describe('brief with the vocabulary list', () => {
     ).toBe(true);
     expect(brief.new_words.every((w) => w.meaning && w.readings[0])).toBe(true);
     expect(briefPrompt(brief)).toContain('from the JLPT N2 vocabulary list');
+  });
+
+  it('mixes in a few words from easier levels to fill gaps', () => {
+    const brief = buildBrief(db, new Date(2026, 9, 1), () => 0.3);
+    expect(brief.new_words).toHaveLength(15);
+    const easier = brief.new_words.filter((w) => w.jlpt !== 'N2');
+    expect(easier).toHaveLength(4);
+    expect(easier.every((w) => w.jlpt === 'N5')).toBe(true);
+    expect(brief.new_words.slice(0, 11).every((w) => w.jlpt === 'N2')).toBe(
+      true,
+    );
+    expect(briefPrompt(brief)).toContain('Some new words come from easier');
   });
 
   it("lets Claude choose when the source is 'free' or the level is custom", () => {
@@ -269,6 +283,21 @@ describe('readingOf', () => {
     expect(readingOf('納期')).toBe('のうき');
     expect(readingOf('美味しい')).toBe('おいしい');
     expect(readingOf('存在しない単語')).toBeUndefined();
+  });
+});
+
+describe('pickEasierWords', () => {
+  it('picks unpractised words from easier levels, easiest first', () => {
+    practise('会う', true, new Date(2026, 9, 1));
+    const picked = pickEasierWords(db, 2, 10, () => 0.5, list);
+    expect(picked.every((w) => w.level > 2)).toBe(true);
+    expect(picked.map((w) => w.expression)).not.toContain('会う');
+    const levels = picked.map((w) => w.level);
+    expect(levels).toEqual([...levels].sort((a, b) => b - a));
+  });
+
+  it('has nothing easier than N5', () => {
+    expect(pickEasierWords(db, 5, 10, () => 0.5, list)).toEqual([]);
   });
 });
 

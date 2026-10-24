@@ -3,12 +3,14 @@ import { z } from 'zod';
 import { LANGUAGES, type Language } from '../shared/api';
 import { LangTest } from '../shared/test-schema';
 import { getBriefData, getSettings } from './database';
-import { levelOf, pickNewWords } from './vocab';
+import { levelOf, pickEasierWords, pickNewWords } from './vocab';
 import { localDay } from './scheduler';
 import { plainExpression } from './vocab/merge';
 
 const MAX_DUE_TARGETS = 40;
 const MIN_NEW_WORDS = 5;
+// About this share of the new words come from easier levels, to fill gaps.
+const EASIER_SHARE = 0.25;
 
 export function buildBrief(
   db: DatabaseSync,
@@ -22,10 +24,11 @@ export function buildBrief(
     settings.wordSource === 'jlpt' ? levelOf(settings.level) : null;
   const dueCount = Math.min(due.length, MAX_DUE_TARGETS);
   const newWords = jlptLevel
-    ? pickNewWords(
+    ? pickWords(
         db,
         jlptLevel,
         Math.max(MIN_NEW_WORDS, settings.questionCount - dueCount),
+        settings.easierWords,
         random,
       )
     : [];
@@ -61,6 +64,7 @@ export function buildBrief(
       return {
         expression: plainExpression(word.expression),
         readings: word.reading.split('、'),
+        jlpt: `N${word.level}`,
         meaning: word.meaningEn,
         meaning_zh_hans: word.meaningSc,
         meaning_zh_hant: word.meaningTc,
@@ -69,6 +73,20 @@ export function buildBrief(
       };
     }),
   };
+}
+
+/** New words from the level, plus a few from easier levels when asked. */
+function pickWords(
+  db: DatabaseSync,
+  level: NonNullable<ReturnType<typeof levelOf>>,
+  count: number,
+  easier: boolean,
+  random: () => number,
+) {
+  const gaps = easier
+    ? pickEasierWords(db, level, Math.ceil(count * EASIER_SHARE), random)
+    : [];
+  return [...pickNewWords(db, level, count - gaps.length, random), ...gaps];
 }
 
 function newWordsRule(brief: ReturnType<typeof buildBrief>): string {
@@ -84,7 +102,14 @@ function newWordsRule(brief: ReturnType<typeof buildBrief>): string {
   return `- Write exactly ${total} questions: ${reviews} for the due targets and ${brief.new_words.length} for the new words, one question per new word. Every word in "new_words" must appear in the "targets" of a question; do not skip any.
 - Fill the remaining questions with the words in "new_words" (from the ${brief.word_list} vocabulary list), one question per word, in the order given. Use the topics (${topics}) as the theme of the prompts and example sentences. In "targets", use each word's "expression" exactly as written.
 - Each new word comes with its meaning in English ("meaning") and Chinese ("meaning_zh_hans", "meaning_zh_hant"). Test the sense these describe. When a question's options are meanings, base them on these, so they agree with the learner's word list.
-- "example", when given, shows the word in use. Write your own sentence; do not copy it.`;
+- "example", when given, shows the word in use. Write your own sentence; do not copy it.${easierRule(brief)}`;
+}
+
+function easierRule(brief: ReturnType<typeof buildBrief>): string {
+  const level = brief.word_list?.replace('JLPT ', '');
+  if (!brief.new_words.some((word) => word.jlpt !== level)) return '';
+  return `
+- Some new words come from easier JLPT levels ("jlpt"), to fill gaps in what the learner knows. Still write their questions and sentences for a learner ${brief.learner.level}.`;
 }
 
 export function briefPrompt(brief: ReturnType<typeof buildBrief>): string {

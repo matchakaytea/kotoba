@@ -38,6 +38,7 @@ import {
   getSummary,
   getTest,
   getToday,
+  madeTestOn,
   recordAttempt,
   saveSettings,
   saveTest,
@@ -52,6 +53,7 @@ import {
   wordStatuses,
 } from './vocab';
 import { localDay } from './scheduler';
+import { getStudyPlan } from './study';
 import { backupDatabase, readBackup, restoreDatabase } from './backup';
 import { readSkinPicture, saveSkinPicture } from './skin-picture';
 import type { SyncManager } from './sync/manager';
@@ -135,6 +137,7 @@ export function registerIpcHandlers({
   handle('summary:get', () => getSummary(db));
   handle('today:get', () => getToday(db));
   handle('session:get', () => buildSession(db));
+  handle('study:get', () => getStudyPlan(db));
   handle('mistakes:get', () => withReadings(getMistakes(db)));
   handle('mistakes:dismiss', async (_event, payload) => {
     const id = z.number().int().parse(payload);
@@ -269,6 +272,13 @@ export function registerIpcHandlers({
   );
 
   handle('claude:status', () => ({ found: findClaude() !== null }));
+
+  // Today's test is made once, when Kotoba is open on a day without one.
+  handle('claude:shouldAutoGenerate', async () => {
+    if (claudeBusy || !getSettings(db).autoGenerate) return false;
+    if (madeTestOn(db, localDay(new Date()))) return false;
+    return findClaude() !== null && (await sync.signedIn());
+  });
 
   handle('claude:generate', async () => {
     await requireSignIn();

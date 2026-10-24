@@ -26,6 +26,7 @@ import {
   withReadings,
   wordStatuses,
 } from '../main/vocab';
+import { getStudyPlan } from '../main/study';
 import { loadPicture, savePicture } from './storage';
 
 const DESKTOP_ONLY = 'This only works in the Kotoba desktop app.';
@@ -81,6 +82,9 @@ export function webApi(
     generateTest: async () => {
       throw new Error(DESKTOP_ONLY);
     },
+    // Tests are made on the desktop; the web version studies them.
+    shouldAutoGenerate: async () => false,
+    getStudyPlan: async () => getStudyPlan(db),
     getMistakes: async () => withReadings(getMistakes(db)),
     dismissMistake: async (id) => {
       if (await sync.signedIn()) {
